@@ -1,0 +1,14 @@
+{
+  "pack": {
+    "id": "noctispowers",
+    "description": "Poderes do Noctis",
+    "pack_format": 15,
+    "version": "1.0.0"
+  },
+  "dependencies": 
+  {
+    "common": {
+      "palladium":"*"
+    }
+  }
+}

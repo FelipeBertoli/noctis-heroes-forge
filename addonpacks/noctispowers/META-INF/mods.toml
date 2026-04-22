@@ -1,0 +1,19 @@
+modLoader = 'lowcodefml'
+showAsResourcePack = false
+loaderVersion="[47,)"
+license="All rights reserved"
+
+[[mods]]
+modId="noctispowers"
+displayName="NoctisPowers"
+version="1.0.0"
+description='''
+Heróis Noctis
+'''
+
+[[dependencies.noctispowers]]
+modId = "palladium"
+mandatory = true
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"

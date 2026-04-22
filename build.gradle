@@ -37,6 +37,25 @@ dependencies {
 
 }
 
+tasks.processResources {
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    // Datapack (Minecraft)
+    from("addonpacks/noctispowers/data") {
+        into "data"
+    }
+
+    // Assets (texturas, models, etc)
+    from("addonpacks/noctispowers/assets") {
+        into "assets"
+    }
+
+    // Addonpack completo (Palladium)
+    from("addonpacks") {
+        into "addonpacks"
+    }
+}
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 17
