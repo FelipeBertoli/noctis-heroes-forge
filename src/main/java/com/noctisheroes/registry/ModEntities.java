@@ -19,7 +19,6 @@ public class ModEntities {
             ENTITIES.register("viltrumite",
                     () -> EntityType.Builder.of(ViltrumiteEntity::new, MobCategory.MONSTER)
                             .sized(0.6F, 1.8F)
-
                             .build(new ResourceLocation(NoctisHeroes.MODID, "viltrumite").toString()));
 
     public static void register(IEventBus bus) {

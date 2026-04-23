@@ -1,6 +1,5 @@
 package com.noctisheroes;
 
-import com.noctisheroes.registry.ModCreativeTabs;
 import com.noctisheroes.registry.ModEntities;
 import com.noctisheroes.registry.ModItems;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -15,7 +14,6 @@ public class NoctisHeroes {
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModItems.ITEMS.register(bus);
-        ModCreativeTabs.CREATIVE_TABS.register(bus);
         ModEntities.register(bus);
 
     }

@@ -1,14 +1,13 @@
 package com.noctisheroes.entity.ai;
 
-import com.noctisheroes.entity.ViltrumiteEntity;
+import com.noctisheroes.entity.base.AbstractViltrumite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
 
 public class ViltrumiteNavigation extends FlyingPathNavigation {
 
-    public ViltrumiteNavigation(ViltrumiteEntity entity, Level level) {
+    public ViltrumiteNavigation(AbstractViltrumite entity, Level level) {
         super(entity, level);
         // Permite passar por ar livremente
         this.nodeEvaluator.setCanOpenDoors(false);
