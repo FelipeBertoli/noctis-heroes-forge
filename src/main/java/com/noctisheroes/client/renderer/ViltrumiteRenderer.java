@@ -1,7 +1,7 @@
 package com.noctisheroes.client.renderer;
 
 import com.noctisheroes.client.model.ViltrumiteModel;
-import com.noctisheroes.entity.ViltrumiteEntity;
+import com.noctisheroes.entity.mobs.ViltrumiteEntity;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 
 /**

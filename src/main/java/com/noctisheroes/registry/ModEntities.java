@@ -1,7 +1,7 @@
 package com.noctisheroes.registry;
 
 import com.noctisheroes.NoctisHeroes;
-import com.noctisheroes.entity.ViltrumiteEntity;
+import com.noctisheroes.entity.mobs.ViltrumiteEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;

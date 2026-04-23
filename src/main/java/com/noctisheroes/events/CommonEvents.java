@@ -1,6 +1,6 @@
 package com.noctisheroes.events;
 
-import com.noctisheroes.entity.ViltrumiteEntity;
+import com.noctisheroes.entity.mobs.ViltrumiteEntity;
 import com.noctisheroes.registry.ModEntities;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -11,6 +11,6 @@ public class CommonEvents {
 
     @SubscribeEvent
     public static void onAttributeCreate(EntityAttributeCreationEvent event) {
-        event.put(ModEntities.VILTRUMITE.get(), ViltrumiteEntity.createAttributes().build());
+        event.put(ModEntities.VILTRUMITE.get(), ViltrumiteEntity.setAttributes());
     }
 }

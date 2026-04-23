@@ -2,8 +2,11 @@ package com.noctisheroes.client.renderer;
 
 import com.noctisheroes.NoctisHeroes;
 import com.noctisheroes.entity.base.AbstractMob;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 /**
@@ -24,6 +27,7 @@ public abstract class AbstractMobRenderer<T extends AbstractMob>
                                   String mobName) {
         super(context, model);
         this.mobName = mobName;
+        this.shadowRadius=0.6f;
     }
 
     @Override
@@ -32,4 +36,11 @@ public abstract class AbstractMobRenderer<T extends AbstractMob>
         return new ResourceLocation(NoctisHeroes.MODID,
                 "textures/entity/" + mobName + "/" + mobName + "_" + skinId + ".png");
     }
+
+    @Override
+    public RenderType getRenderType(T animatable, ResourceLocation texture, @Nullable MultiBufferSource bufferSource, float partialTick) {
+        return super.getRenderType(animatable, texture, bufferSource, partialTick);
+    }
+
+
 }
