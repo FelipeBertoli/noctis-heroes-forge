@@ -18,11 +18,11 @@ public class ViltrumiteEntity extends AbstractViltrumite {
     public static AttributeSupplier setAttributes(){
         return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 200.0D)
-                .add(Attributes.MOVEMENT_SPEED, 0.3D)
-                .add(Attributes.ATTACK_DAMAGE, 18.0D)
-                .add(Attributes.FOLLOW_RANGE, 32.0D)
-                .add(Attributes.ARMOR, 12.0D)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D)
+                .add(Attributes.MOVEMENT_SPEED, 0.5D)
+                .add(Attributes.ATTACK_DAMAGE, 12.0D)
+                .add(Attributes.FOLLOW_RANGE, 40.0D)
+                .add(Attributes.ARMOR, 6.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.5D)
                 .build();
     }
 }

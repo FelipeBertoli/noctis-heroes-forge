@@ -15,6 +15,7 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
@@ -32,7 +33,10 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public abstract class AbstractMob extends Monster implements GeoEntity {
     protected static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("animation.viltrumite.walk");
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.viltrumite.idle");
+    protected static final RawAnimation RIGHT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.viltrumite.right_attack");
+    protected static final RawAnimation LEFT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.viltrumite.left_attack");
 
+    private boolean lastAttackRight = false;
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     private static final EntityDataAccessor<Integer> SKIN_ID =
@@ -65,9 +69,27 @@ public abstract class AbstractMob extends Monster implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar register) {
-        register.add(new AnimationController<AbstractMob>(this, "main", 8, this::walkController));
+        register.add(new AnimationController<>(this, "walkController", 8, this::walkController));
+        register.add(new AnimationController<>(this, "attackController", 0, this::attackController));
     }
 
+    private PlayState attackController(final AnimationState<?> event) {
+        if (this.swinging && event.getController().getAnimationState() == AnimationController.State.STOPPED) {
+
+            event.getController().forceAnimationReset();
+
+            if (lastAttackRight) {
+                event.setAndContinue(LEFT_ATTACK_ANIM);
+            } else {
+                event.setAndContinue(RIGHT_ATTACK_ANIM);
+            }
+
+            lastAttackRight = !lastAttackRight;
+            this.swinging = false;
+        }
+
+        return PlayState.CONTINUE;
+    }
 
     @Override
     protected void registerGoals() {
@@ -79,6 +101,7 @@ public abstract class AbstractMob extends Monster implements GeoEntity {
         targetSelector.addGoal(1, new HurtByTargetGoal(this));
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
+        targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, IronGolem.class, false));
     }
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
