@@ -10,6 +10,6 @@ import com.noctisheroes.entity.mobs.ViltrumiteEntity;
 public class ViltrumiteModel extends AbstractMobModel<ViltrumiteEntity> {
 
     public ViltrumiteModel() {
-        super("viltrumite");
+        super("viltrumite", "viltrumite", "viltrumite");
     }
 }

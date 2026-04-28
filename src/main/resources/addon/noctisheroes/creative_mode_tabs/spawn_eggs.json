@@ -1,6 +1,8 @@
 {
   "icon": "minecraft:apple",
   "items": [
-    "noctisheroes:viltrumite_spawn_egg"
+    "noctisheroes:viltrumite_spawn_egg",
+    "noctisheroes:lucan_boss_spawn_egg",
+    "noctisheroes:thragg_boss_spawn_egg"
   ]
 }

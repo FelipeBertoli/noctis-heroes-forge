@@ -8,9 +8,9 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
  * Renderer do Viltrumita.
  * Apenas informa o nome — toda a lógica fica em AbstractMobRenderer.
  */
-public class ViltrumiteRenderer extends AbstractMobRenderer<ViltrumiteEntity> {
+public class ViltrumiteRenderer extends NoctisEntityRenderer<ViltrumiteEntity> {
 
     public ViltrumiteRenderer(EntityRendererProvider.Context context) {
-        super(context, new ViltrumiteModel(), "viltrumite");
+        super(context, new ViltrumiteModel(), "viltrumite", "viltrumite");
     }
 }

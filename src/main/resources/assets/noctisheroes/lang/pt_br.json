@@ -1,5 +1,8 @@
 {
   "entity.noctisheroes.viltrumite": "Viltrumita",
+  "entity.noctisheroes.thragg_boss": "Regente Thragg",
   "item.noctisheroes.viltrumite_spawn_egg": "Ovo de Spawn de Viltrumita",
+  "item.noctisheroes.lucan_boss_spawn_egg": "Ovo de Spawn de Lucan" ,
+  "item.noctisheroes.thragg_boss_spawn_egg": "Ovo de Spawn de Regente Thragg",
   "itemGroup.noctisheroes.spawn_eggs": "Noctis Heroes - Ovos de Spawn"
 }

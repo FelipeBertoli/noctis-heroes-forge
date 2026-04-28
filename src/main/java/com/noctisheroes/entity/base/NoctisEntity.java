@@ -1,6 +1,6 @@
 package com.noctisheroes.entity.base;
 
-
+import com.noctisheroes.entity.base.handlers.MeleeAttackHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -30,37 +30,34 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public abstract class AbstractMob extends Monster implements GeoEntity {
+public abstract class NoctisEntity extends Monster implements GeoEntity {
     protected static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("animation.viltrumite.walk");
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.viltrumite.idle");
-    protected static final RawAnimation RIGHT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.viltrumite.right_attack");
-    protected static final RawAnimation LEFT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.viltrumite.left_attack");
+    public static final RawAnimation RIGHT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.viltrumite.right_attack");
+    public static final RawAnimation LEFT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.viltrumite.left_attack");
 
-    private boolean lastAttackRight = false;
+
+    public String getEntityTag() {
+        return entityTag;
+    }
+
+    protected String entityTag;
+
+    private final MeleeAttackHandler<NoctisEntity> attackHandler = new MeleeAttackHandler<>();
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     private static final EntityDataAccessor<Integer> SKIN_ID =
-            SynchedEntityData.defineId(AbstractMob.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(NoctisEntity.class, EntityDataSerializers.INT);
     protected abstract int getSkinCount();
 
-    public AbstractMob(EntityType<? extends Monster> entityType, Level level) {
+    public NoctisEntity(EntityType<? extends Monster> entityType,
+                        Level level,
+                        String entityTag) {
         super(entityType, level);
+        this.entityTag = entityTag;
     }
 
-//    public static AttributeSupplier setAttributes(){
-//        return Monster.createMonsterAttributes()
-//                .add(Attributes.MAX_HEALTH, 0.0D)
-//                .add(Attributes.MOVEMENT_SPEED, 0.0D)
-//                .add(Attributes.ATTACK_DAMAGE, 0.0D)
-//                .add(Attributes.ATTACK_SPEED, 0.0D)
-//                .add(Attributes.ATTACK_KNOCKBACK, 0.0D)
-//                .add(Attributes.FOLLOW_RANGE, 0.0D)
-//                .add(Attributes.ARMOR_TOUGHNESS, 0.0D)
-//                .add(Attributes.ARMOR, 0.0D)
-//                .add(Attributes.KNOCKBACK_RESISTANCE, 0.0D).build();
-//    }
-
-    protected <E extends AbstractMob> PlayState walkController(final AnimationState<E> event) {
+    protected <E extends NoctisEntity> PlayState walkController(final AnimationState<E> event) {
         if (event.isMoving() && this.getDeltaMovement().lengthSqr() > 0.002) {
             return event.setAndContinue(WALK_ANIM);
         }
@@ -74,21 +71,7 @@ public abstract class AbstractMob extends Monster implements GeoEntity {
     }
 
     private PlayState attackController(final AnimationState<?> event) {
-        if (this.swinging && event.getController().getAnimationState() == AnimationController.State.STOPPED) {
-
-            event.getController().forceAnimationReset();
-
-            if (lastAttackRight) {
-                event.setAndContinue(LEFT_ATTACK_ANIM);
-            } else {
-                event.setAndContinue(RIGHT_ATTACK_ANIM);
-            }
-
-            lastAttackRight = !lastAttackRight;
-            this.swinging = false;
-        }
-
-        return PlayState.CONTINUE;
+        return attackHandler.handle((AnimationState<NoctisEntity>) event, this);
     }
 
     @Override
@@ -103,6 +86,7 @@ public abstract class AbstractMob extends Monster implements GeoEntity {
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
         targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, IronGolem.class, false));
     }
+
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return this.geoCache;
@@ -133,6 +117,21 @@ public abstract class AbstractMob extends Monster implements GeoEntity {
                                         CompoundTag dataTag) {
         setSkinId(random.nextInt(getSkinCount()));
         return super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, dataTag);
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("SkinId", this.getSkinId());
+    }
+
+    // 🔥 IMPORTANTE: Carregar a skin do NBT (ao voltar pro mundo)
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.contains("SkinId")) {
+            this.setSkinId(tag.getInt("SkinId"));
+        }
     }
 
 }
