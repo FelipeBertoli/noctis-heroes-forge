@@ -14,13 +14,13 @@ import software.bernie.geckolib.model.GeoModel;
  *
  * A textura é resolvida pelo renderer (suporte a multi-skin).
  */
-public abstract class AbstractMobModel<T extends NoctisEntity> extends GeoModel<T> {
+public abstract class NoctisEntityModel<T extends NoctisEntity> extends GeoModel<T> {
 
     private final ResourceLocation modelPath;
     private final ResourceLocation animationPath;
     private final ResourceLocation texturePath;
 
-    protected AbstractMobModel(String modelTag, String animationTag, String textureTag) {
+    protected NoctisEntityModel(String modelTag, String animationTag, String textureTag) {
         this.modelPath       = new ResourceLocation(NoctisHeroes.MODID, "geo/entity/" + modelTag + ".geo.json");
         this.animationPath   = new ResourceLocation(NoctisHeroes.MODID, "animations/" + animationTag + ".animation.json");
         this.texturePath = new ResourceLocation(NoctisHeroes.MODID, "textures/entity/" + modelTag + "/" + textureTag + "_0.png");

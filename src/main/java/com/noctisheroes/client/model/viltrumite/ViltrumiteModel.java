@@ -1,13 +1,14 @@
-package com.noctisheroes.client.model;
+package com.noctisheroes.client.model.viltrumite;
 
-import com.noctisheroes.entity.mobs.ViltrumiteEntity;
+import com.noctisheroes.client.model.NoctisEntityModel;
+import com.noctisheroes.entity.mobs.viltrumite.ViltrumiteEntity;
 
 /**
  * Modelo do Viltrumita.
  * O arquivo geo fica em: assets/noctisheroes/geo/entity/viltrumite.geo.json
  * As animações ficam em: assets/noctisheroes/animations/viltrumite.animation.json
  */
-public class ViltrumiteModel extends AbstractMobModel<ViltrumiteEntity> {
+public class ViltrumiteModel extends NoctisEntityModel<ViltrumiteEntity> {
 
     public ViltrumiteModel() {
         super("viltrumite", "viltrumite", "viltrumite");

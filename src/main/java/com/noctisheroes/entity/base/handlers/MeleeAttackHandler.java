@@ -18,7 +18,7 @@ public class MeleeAttackHandler <T extends NoctisEntity>{
             if (lastAttackRight) {
                 event.setAndContinue(NoctisEntity.LEFT_ATTACK_ANIM);
             } else {
-                event.setAndContinue(NoctisEntity.RIGHT_ATTACK_ANIM);
+                event.setAndContinue(NoctisEntity.RIGHT_ATTACK_ANIM );
             }
             lastAttackRight = !lastAttackRight;
             entity.swinging = false;
