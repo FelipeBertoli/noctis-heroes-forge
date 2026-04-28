@@ -5,6 +5,6 @@ import com.noctisheroes.entity.boss.viltrumite.LucanBoss;
 public class LucanBossModel extends AbstractMobModel<LucanBoss>{
 
     public LucanBossModel() {
-        super("viltrumite", "viltrumite", "viltrumite_lucan_boss");
+        super("viltrumite", "viltrumite", "lucan_boss");
     }
 }
