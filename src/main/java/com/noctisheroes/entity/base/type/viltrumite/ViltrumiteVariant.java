@@ -1,4 +1,4 @@
-package com.noctisheroes.entity.base.viltrumite;
+package com.noctisheroes.entity.base.type.viltrumite;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Monster;

@@ -1,7 +1,7 @@
 package com.noctisheroes.entity.base.goals;
 
 import com.noctisheroes.entity.base.states.FlightState;
-import com.noctisheroes.entity.base.viltrumite.AbstractViltrumite;
+import com.noctisheroes.entity.base.type.viltrumite.AbstractViltrumite;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 

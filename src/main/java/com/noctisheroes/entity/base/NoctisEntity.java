@@ -1,5 +1,6 @@
 package com.noctisheroes.entity.base;
 
+import com.noctisheroes.entity.abilities.AbilityManager;
 import com.noctisheroes.entity.base.handlers.MeleeAttackHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -22,7 +23,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
@@ -62,7 +62,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private final MeleeAttackHandler<NoctisEntity> attackHandler = new MeleeAttackHandler<>();
     private final String entityTag;
-
+    private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
     // =============================
     // 🏗️ CONSTRUTOR
     // =============================
@@ -118,7 +118,14 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         return event.setAndContinue(IDLE_ANIM);
     }
 
-    private PlayState attackController(final AnimationState<?> event) {
+    protected PlayState attackController(AnimationState<?> event) {
+
+        var ability = this.getAbilityManager().getCurrentAbility();
+
+        if (ability != null && ability.getAnimation() != null) {
+            return event.setAndContinue(ability.getAnimation());
+        }
+
         return attackHandler.handle((AnimationState<NoctisEntity>) event, this);
     }
 
@@ -180,6 +187,9 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
+        if (!level().isClientSide) {
+            abilityManager.tick(this);
+        }
     }
 
     @Override
@@ -212,4 +222,8 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
      * Retorna a quantidade de skins disponíveis para esta entidade.
      */
     protected abstract int getSkinCount();
+
+    public AbilityManager<NoctisEntity> getAbilityManager() {
+        return abilityManager;
+    }
 }

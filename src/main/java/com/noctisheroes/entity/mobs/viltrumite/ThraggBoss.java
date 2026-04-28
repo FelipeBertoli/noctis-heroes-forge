@@ -1,6 +1,6 @@
 package com.noctisheroes.entity.mobs.viltrumite;
 
-import com.noctisheroes.entity.base.viltrumite.ViltrumiteBoss;
+import com.noctisheroes.entity.base.type.viltrumite.ViltrumiteBoss;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;

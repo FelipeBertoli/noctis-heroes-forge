@@ -1,4 +1,4 @@
-package com.noctisheroes.entity.base.viltrumite;
+package com.noctisheroes.entity.base.type.viltrumite;
 
 import com.noctisheroes.entity.base.components.BossComponent;
 import net.minecraft.server.level.ServerPlayer;

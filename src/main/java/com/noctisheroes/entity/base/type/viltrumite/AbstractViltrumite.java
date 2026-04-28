@@ -1,5 +1,6 @@
-package com.noctisheroes.entity.base.viltrumite;
+package com.noctisheroes.entity.base.type.viltrumite;
 
+import com.noctisheroes.entity.abilities.DestructiveDashAbility;
 import com.noctisheroes.entity.base.NoctisEntity;
 import com.noctisheroes.entity.base.goals.FlyingChaseGoal;
 import com.noctisheroes.entity.base.states.FlightState;
@@ -66,6 +67,7 @@ public abstract class AbstractViltrumite extends NoctisEntity {
     protected AbstractViltrumite(EntityType<? extends Monster> type, Level level, String tag) {
         super(type, level, tag);
         this.moveControl = new FlyingMoveControl(this, 10, true);
+        this.getAbilityManager().register(new DestructiveDashAbility());
     }
 
     // =============================
@@ -101,6 +103,8 @@ public abstract class AbstractViltrumite extends NoctisEntity {
         this.stateTimer = 0;
         this.ticksSinceFlightChange = 0;
     }
+
+
 
     // =============================
     // 🎯 GOALS
@@ -145,6 +149,10 @@ public abstract class AbstractViltrumite extends NoctisEntity {
             case GROUNDED -> {
                 return super.walkController(event);
             }
+        }
+
+        if (this.getAbilityManager().isUsingAbility()) {
+            return PlayState.STOP;
         }
 
         return PlayState.CONTINUE;
