@@ -1,6 +1,7 @@
 package com.noctisheroes.entity.base.type.viltrumite;
 
 import com.noctisheroes.entity.abilities.DestructiveDashAbility;
+import com.noctisheroes.entity.abilities.SuperPunchAbility;
 import com.noctisheroes.entity.base.NoctisEntity;
 import com.noctisheroes.entity.base.goals.FlyingChaseGoal;
 import com.noctisheroes.entity.base.states.FlightState;
@@ -68,6 +69,7 @@ public abstract class AbstractViltrumite extends NoctisEntity {
         super(type, level, tag);
         this.moveControl = new FlyingMoveControl(this, 10, true);
         this.getAbilityManager().register(new DestructiveDashAbility());
+        this.getAbilityManager().register(new SuperPunchAbility());
     }
 
     // =============================

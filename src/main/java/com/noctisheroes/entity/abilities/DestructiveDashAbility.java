@@ -1,8 +1,6 @@
 package com.noctisheroes.entity.abilities;
 
 import com.noctisheroes.entity.base.NoctisEntity;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.core.animation.RawAnimation;
@@ -74,8 +72,9 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
 
             if (dist < 3.5) {
 
-                // dano massivo
-                target.hurt(entity.damageSources().mobAttack(entity), 35.0F);
+                float damage = (float) entity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+
+                target.hurt(entity.damageSources().mobAttack(entity), damage * 1.5F);
 
                 // knockback absurdo
                 Vec3 knockDir = target.position()
@@ -96,40 +95,6 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
                         3.0F,
                         Level.ExplosionInteraction.MOB
                 );
-            }
-        }
-
-        // =============================
-        // 🌍 IMPACTO COM BLOCO (REAÇÃO SECUNDÁRIA)
-        // =============================
-        if (launchedTarget) {
-            if (entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                for (ServerPlayer player : serverLevel.players()) {
-                    player.displayClientMessage(
-                            Component.literal("Launched Target"),
-                            false
-                    );
-                }
-            }
-            if (target.horizontalCollision || target.verticalCollision) {
-                if (entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                    for (ServerPlayer player : serverLevel.players()) {
-                        player.displayClientMessage(
-                                Component.literal("Atingiu superficie"),
-                                false
-                        );
-                    }
-                }
-                level.explode(
-                        entity,
-                        target.getX(),
-                        target.getY(),
-                        target.getZ(),
-                        2.0F,
-                        Level.ExplosionInteraction.MOB
-                );
-
-                launchedTarget = false;
             }
         }
 
