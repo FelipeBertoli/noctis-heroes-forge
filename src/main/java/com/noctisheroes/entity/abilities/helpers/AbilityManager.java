@@ -1,8 +1,6 @@
-package com.noctisheroes.entity.abilities;
+package com.noctisheroes.entity.abilities.helpers;
 
 import com.noctisheroes.entity.base.NoctisEntity;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;
 import java.util.Map;

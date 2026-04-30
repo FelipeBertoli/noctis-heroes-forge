@@ -1,15 +1,17 @@
 package com.noctisheroes.entity.base;
 
-import com.noctisheroes.entity.abilities.AbilityManager;
+import com.noctisheroes.entity.abilities.helpers.AbilityManager;
 import com.noctisheroes.entity.base.handlers.MeleeAttackHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -39,7 +41,8 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * - Métodos template para customização em subclasses
  * - Cache de animações e dados sincronizados
  * - Lazy initialization para otimização de memória
- * - Métodos privados para operações internas
+ * - Detection range e follow range configuráveis
+ * - Dano direcionado (pode ser bloqueado para certas entities)
  */
 public abstract class NoctisEntity extends Monster implements GeoEntity {
     // =============================
@@ -63,6 +66,27 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     private final MeleeAttackHandler<NoctisEntity> attackHandler = new MeleeAttackHandler<>();
     private final String entityTag;
     private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
+
+    // =============================
+    // 📍 DETECTION & FOLLOW RANGE
+    // =============================
+
+    /**
+     * Distância de detecção de alvo.
+     * Override em subclasses para customizar.
+     */
+    protected double getDetectionRange() {
+        return this.getAttributeValue(Attributes.FOLLOW_RANGE);
+    }
+
+    /**
+     * Distância de follow uma vez que o alvo foi detectado.
+     * Override em subclasses para customizar.
+     */
+    protected double getFollowRange() {
+        return this.getAttributeValue(Attributes.FOLLOW_RANGE) * 1.5; // 1.5x da detection range
+    }
+
     // =============================
     // 🏗️ CONSTRUTOR
     // =============================
@@ -119,13 +143,10 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     }
 
     protected PlayState attackController(AnimationState<?> event) {
-
         var ability = this.getAbilityManager().getCurrentAbility();
-
         if (ability != null && ability.getAnimation() != null) {
             return event.setAndContinue(ability.getAnimation());
         }
-
         return attackHandler.handle((AnimationState<NoctisEntity>) event, this);
     }
 
@@ -135,44 +156,25 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
 
     @Override
     protected void registerGoals() {
-        // Objetivos de movimento
         this.registerMovementGoals();
-
-        // Objetivos de combate
         this.registerCombatGoals();
-
-        // Objetivos de interação
         this.registerLookingGoals();
-
-        // Objetivos de alvo
         this.registerTargetGoals();
     }
 
-    /**
-     * Registra objetivos de movimento. Override para customização.
-     */
     protected void registerMovementGoals() {
         goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D));
     }
 
-    /**
-     * Registra objetivos de combate. Override para customização.
-     */
     protected void registerCombatGoals() {
         goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.3D, false));
     }
 
-    /**
-     * Registra objetivos de olhar/interação visual.
-     */
     protected void registerLookingGoals() {
         goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         goalSelector.addGoal(4, new RandomLookAroundGoal(this));
     }
 
-    /**
-     * Registra objetivos de alvo. Override para adicionar mais alvos.
-     */
     protected void registerTargetGoals() {
         targetSelector.addGoal(1, new HurtByTargetGoal(this));
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
@@ -215,12 +217,35 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     }
 
     // =============================
-    // 🔗 MÉTODOS ABSTRATOS
+    // 💥 DANO DIRECIONADO
     // =============================
 
     /**
-     * Retorna a quantidade de skins disponíveis para esta entidade.
+     * Hook para verificar se este mob pode ser ferido por uma source específica.
+     * Override em subclasses para lógica customizada.
      */
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        // Permite que subclasses bloqueiem certos tipos de dano
+        if (!canBeDamagedBy(source)) {
+            return false;
+        }
+
+        return super.hurt(source, amount);
+    }
+
+    /**
+     * Verifica se este mob pode ser ferido por uma source.
+     * Override para customizar (ex: imunidade a certos danos).
+     */
+    protected boolean canBeDamagedBy(DamageSource source) {
+        return true; // Padrão: aceita todos os danos
+    }
+
+    // =============================
+    // 🔗 MÉTODOS ABSTRATOS
+    // =============================
+
     protected abstract int getSkinCount();
 
     public AbilityManager<NoctisEntity> getAbilityManager() {

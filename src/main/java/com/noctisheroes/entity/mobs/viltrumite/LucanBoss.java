@@ -30,7 +30,9 @@ public class LucanBoss extends ViltrumiteBoss {
             .build();
 
     public LucanBoss(EntityType<? extends Monster> type, Level level) {
+
         super(type, level, "lucan_boss", CONFIG);
+        this.getBossComponent();
     }
 
     public static AttributeSupplier setAttributes() {

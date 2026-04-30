@@ -1,8 +1,10 @@
 package com.noctisheroes.entity.abilities;
 
+import com.noctisheroes.entity.abilities.helpers.ImpactDetector;
+import com.noctisheroes.entity.abilities.helpers.NoctisAbility;
 import com.noctisheroes.entity.base.NoctisEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
+import com.noctisheroes.entity.abilities.helpers.AbilityParticleEffects;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -134,7 +136,7 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
 
         // Partículas de preparação (quebra de som suave)
         if (ticks % 2 == 0) {
-            AbilityParticleEffects.spawnSonicBoomEffect(
+            AbilityParticleEffects.spawnAirBreakerEffect(
                     entity.level(),
                     entity.position().add(0, entity.getBbHeight() * 0.5, 0),
                     0.5

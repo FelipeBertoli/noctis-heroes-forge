@@ -1,4 +1,4 @@
-package com.noctisheroes.entity.abilities;
+package com.noctisheroes.entity.abilities.helpers;
 
 import com.noctisheroes.entity.base.NoctisEntity;
 import software.bernie.geckolib.core.animation.RawAnimation;

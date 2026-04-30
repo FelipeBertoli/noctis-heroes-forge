@@ -1,11 +1,14 @@
 package com.noctisheroes.entity.base.type.viltrumite;
 
+import com.noctisheroes.entity.abilities.helpers.AbilityParticleEffects;
 import com.noctisheroes.entity.abilities.DestructiveDashAbility;
 import com.noctisheroes.entity.abilities.SuperPunchAbility;
 import com.noctisheroes.entity.base.NoctisEntity;
 import com.noctisheroes.entity.base.goals.FlyingChaseGoal;
 import com.noctisheroes.entity.base.states.FlightState;
 import net.minecraft.network.syncher.*;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
@@ -20,6 +23,16 @@ import software.bernie.geckolib.core.animation.*;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.object.PlayState;
 
+/**
+ * Viltrumita base com máquina de estados de voo e efeitos de sonic boom.
+ *
+ * ✅ Melhorias:
+ * - Rastro de sonic boom durante hunt flight
+ * - Efeitos de partículas sincronizados com estado
+ * - Performance otimizada
+ * - Integração com AbilityParticleEffects
+ package com.noctisheroes.entity.base.type.viltrumite;
+*/
 public abstract class AbstractViltrumite extends NoctisEntity {
 
     // =============================
@@ -60,6 +73,20 @@ public abstract class AbstractViltrumite extends NoctisEntity {
 
     protected static final float RANDOM_FLIGHT_TOGGLE_CHANCE = 0.002f;
     protected static final float COMBAT_FLIGHT_CHANCE = 0.01f;
+
+    // =============================
+    // ✨ EFEITOS DE PARTÍCULAS
+    // =============================
+
+    private int sonicBoomTicks = 0;
+    private static final int SONIC_BOOM_INTERVAL = 2; // A cada 2 ticks em HUNT_FLIGHT
+
+    // =============================
+    // 🛡️ PROTEÇÕES
+    // =============================
+
+    private static final float FIRE_RESISTANCE = 0.5f;      // 50% de resistência a fogo
+    private static final float PROJECTILE_RESISTANCE = 0.6f; // 60% de resistência a projéteis
 
     // =============================
     // 🏗️ CONSTRUTOR
@@ -220,6 +247,7 @@ public abstract class AbstractViltrumite extends NoctisEntity {
         stateTimer++;
 
         updateFlightState();
+        updateParticleEffects();
     }
 
     // =============================
@@ -265,6 +293,69 @@ public abstract class AbstractViltrumite extends NoctisEntity {
         }
     }
 
+    // =============================
+    // ✨ EFEITOS DE PARTÍCULAS
+    // =============================
+
+    /**
+     * Atualiza efeitos visuais baseado no estado de voo.
+     */
+    private void updateParticleEffects() {
+        FlightState currentState = getFlightState();
+
+        if (currentState == FlightState.HUNT_FLIGHT) {
+            sonicBoomTicks++;
+
+            // Spawn rastro a cada SONIC_BOOM_INTERVAL ticks
+            if (sonicBoomTicks % SONIC_BOOM_INTERVAL == 0) {
+                AbilityParticleEffects.spawnHuntFlightTrail(
+                        this.level(),
+                        this.position(),
+                        this.getDeltaMovement()
+                );
+            }
+
+            // Efeito de boom adicional a cada 10 ticks
+            if (sonicBoomTicks % 10 == 0) {
+                AbilityParticleEffects.spawnSonicBoomEffect(
+                        this.level(),
+                        this.position(),
+                        1.2
+                );
+            }
+        }
+        else if (currentState == FlightState.FLIGHT_START) {
+            sonicBoomTicks++;
+
+            if (sonicBoomTicks % 3 == 0) {
+                AbilityParticleEffects.spawnSonicBoomEffect(
+                        this.level(),
+                        this.position(),
+                        0.8
+                );
+            }
+        }
+        else {
+            sonicBoomTicks = 0;
+        }
+    }
+
+    // =============================
+    // 🛡️ PROTEÇÕES VILTRUMITA
+    // =============================
+
+    /**
+     * Viltrumitas não são feridos por dano de outros Viltrumitas.
+     */
+    @Override
+    protected boolean canBeDamagedBy(DamageSource source) {
+        // Se a source é de outro Viltrumita, nega
+        if (source.getEntity() instanceof AbstractViltrumite) {
+            return false;
+        }
+
+        return true;
+    }
 
     // =============================
     // ⚙️ CONFIG OVERRIDES

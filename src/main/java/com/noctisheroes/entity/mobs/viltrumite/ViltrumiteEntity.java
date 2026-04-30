@@ -22,8 +22,8 @@ public class ViltrumiteEntity extends ViltrumiteVariant {
             .attackKnockback(0.7)
             .attackSpeed(0.3)
             .followRange(30.0)
-            .armor(0.6)
-            .armorToughness(0.3)
+            .armor(0.3)
+            .armorToughness(0.2)
             .knockbackResistance(0.25)
             .build();
 
