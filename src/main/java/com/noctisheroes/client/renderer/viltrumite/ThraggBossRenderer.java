@@ -2,7 +2,7 @@ package com.noctisheroes.client.renderer.viltrumite;
 
 import com.noctisheroes.client.model.viltrumite.ThraggBossModel;
 import com.noctisheroes.client.renderer.NoctisEntityRenderer;
-import com.noctisheroes.entity.mobs.viltrumite.ThraggBoss;
+import com.noctisheroes.entity.entities.viltrumite.mob.ThraggBoss;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 
 /**

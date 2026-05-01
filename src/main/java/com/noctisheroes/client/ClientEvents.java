@@ -3,10 +3,10 @@ package com.noctisheroes.client;
 import com.noctisheroes.client.renderer.viltrumite.LucanBossRenderer;
 import com.noctisheroes.client.renderer.viltrumite.ThraggBossRenderer;
 import com.noctisheroes.client.renderer.viltrumite.ViltrumiteRenderer;
-import com.noctisheroes.entity.mobs.viltrumite.LucanBoss;
-import com.noctisheroes.entity.mobs.viltrumite.ThraggBoss;
-import com.noctisheroes.entity.mobs.viltrumite.ViltrumiteEntity;
-import com.noctisheroes.registry.ModEntities;
+import com.noctisheroes.entity.entities.viltrumite.mob.LucanBoss;
+import com.noctisheroes.entity.entities.viltrumite.mob.ThraggBoss;
+import com.noctisheroes.entity.entities.viltrumite.mob.ViltrumiteEntity;
+import com.noctisheroes.registry.EntitiesRegistry;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -22,16 +22,16 @@ public class ClientEvents {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.VILTRUMITE.get(), ViltrumiteRenderer::new);
-        event.registerEntityRenderer(ModEntities.THRAGG_BOSS.get(), ThraggBossRenderer::new);
-        event.registerEntityRenderer(ModEntities.LUCAN_BOSS.get(), LucanBossRenderer::new);
+        event.registerEntityRenderer(EntitiesRegistry.VILTRUMITE.get(), ViltrumiteRenderer::new);
+        event.registerEntityRenderer(EntitiesRegistry.THRAGG_BOSS.get(), ThraggBossRenderer::new);
+        event.registerEntityRenderer(EntitiesRegistry.LUCAN_BOSS.get(), LucanBossRenderer::new);
         // Adicione novos mobs aqui — uma linha por mob
     }
 
     @SubscribeEvent
     public static void onAttributeCreate(EntityAttributeCreationEvent event) {
-        event.put(ModEntities.VILTRUMITE.get(), ViltrumiteEntity.setAttributes());
-        event.put(ModEntities.THRAGG_BOSS.get(), ThraggBoss.setAttributes());
-        event.put(ModEntities.LUCAN_BOSS.get(), LucanBoss.setAttributes());
+        event.put(EntitiesRegistry.VILTRUMITE.get(), ViltrumiteEntity.setAttributes());
+        event.put(EntitiesRegistry.THRAGG_BOSS.get(), ThraggBoss.setAttributes());
+        event.put(EntitiesRegistry.LUCAN_BOSS.get(), LucanBoss.setAttributes());
     }
 }

@@ -1,7 +1,7 @@
 package com.noctisheroes.client.model.viltrumite;
 
 import com.noctisheroes.client.model.NoctisEntityModel;
-import com.noctisheroes.entity.mobs.viltrumite.ViltrumiteEntity;
+import com.noctisheroes.entity.entities.viltrumite.mob.ViltrumiteEntity;
 
 /**
  * Modelo do Viltrumita.

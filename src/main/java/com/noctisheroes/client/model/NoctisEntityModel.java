@@ -1,7 +1,7 @@
 package com.noctisheroes.client.model;
 
 import com.noctisheroes.NoctisHeroes;
-import com.noctisheroes.entity.base.NoctisEntity;
+import com.noctisheroes.entity.NoctisEntity;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
 

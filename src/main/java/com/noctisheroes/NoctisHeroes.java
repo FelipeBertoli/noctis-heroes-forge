@@ -1,7 +1,7 @@
 package com.noctisheroes;
 
-import com.noctisheroes.registry.ModEntities;
-import com.noctisheroes.registry.ModItems;
+import com.noctisheroes.registry.EntitiesRegistry;
+import com.noctisheroes.registry.ItemsRegistry;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -13,8 +13,8 @@ public class NoctisHeroes {
     public NoctisHeroes() {
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        ModItems.ITEMS.register(bus);
-        ModEntities.register(bus);
+        ItemsRegistry.ITEMS.register(bus);
+        EntitiesRegistry.register(bus);
 
     }
 }

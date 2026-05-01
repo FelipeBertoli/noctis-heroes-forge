@@ -1,7 +1,7 @@
 package com.noctisheroes.client.renderer;
 
 import com.noctisheroes.NoctisHeroes;
-import com.noctisheroes.entity.base.NoctisEntity;
+import com.noctisheroes.entity.NoctisEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;

@@ -2,7 +2,7 @@ package com.noctisheroes.client.renderer.viltrumite;
 
 import com.noctisheroes.client.model.viltrumite.LucanBossModel;
 import com.noctisheroes.client.renderer.NoctisEntityRenderer;
-import com.noctisheroes.entity.mobs.viltrumite.LucanBoss;
+import com.noctisheroes.entity.entities.viltrumite.mob.LucanBoss;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 
 /**

@@ -1,7 +1,7 @@
 package com.noctisheroes.client.model.viltrumite;
 
 import com.noctisheroes.client.model.NoctisEntityModel;
-import com.noctisheroes.entity.mobs.viltrumite.LucanBoss;
+import com.noctisheroes.entity.entities.viltrumite.mob.LucanBoss;
 
 public class LucanBossModel extends NoctisEntityModel<LucanBoss> {
 
