@@ -30,8 +30,8 @@ public class ClientEvents {
 
     @SubscribeEvent
     public static void onAttributeCreate(EntityAttributeCreationEvent event) {
-        event.put(EntitiesRegistry.VILTRUMITE.get(), ViltrumiteEntity.setAttributes());
-        event.put(EntitiesRegistry.THRAGG_BOSS.get(), ThraggBoss.setAttributes());
-        event.put(EntitiesRegistry.LUCAN_BOSS.get(), LucanBoss.setAttributes());
+        event.put(EntitiesRegistry.VILTRUMITE.get(), ViltrumiteEntity.createAttributes());
+        event.put(EntitiesRegistry.THRAGG_BOSS.get(), ThraggBoss.createAttributes());
+        event.put(EntitiesRegistry.LUCAN_BOSS.get(), LucanBoss.createAttributes());
     }
 }

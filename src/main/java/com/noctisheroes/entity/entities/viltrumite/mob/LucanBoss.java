@@ -1,20 +1,21 @@
 package com.noctisheroes.entity.entities.viltrumite.mob;
 
+import com.noctisheroes.common.config.AttributeConfig;
+import com.noctisheroes.common.config.EntityConfig;
+import com.noctisheroes.common.managers.AttributeManager;
 import com.noctisheroes.entity.entities.viltrumite.base.ViltrumiteBoss;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-
 /**
  * Boss Lucan - Viltrumita médio.
  * Utiliza configuração via ViltrumiteConfig para simplificar código.
  */
 public class LucanBoss extends ViltrumiteBoss {
 
-    private static final ViltrumiteConfig CONFIG = new ViltrumiteConfig.Builder()
-            .xpReward(60)
-            .skinCount(1)
+
+    private static final AttributeConfig ATTRIBUTES = new AttributeConfig.Builder()
             .maxHealth(300.0)
             .movementSpeed(0.4)
             .flyingSpeed(0.8)
@@ -24,18 +25,23 @@ public class LucanBoss extends ViltrumiteBoss {
             .followRange(50.0)
             .armor(0.9)
             .armorToughness(0.36)
-            .knockbackResistance(0.5)
-            .randomFlightToggleChance(0.001f)  // Menos mudanças aleatórias
-            .combatFlightChance(0.02f)         // Mais agressivo em combate
+            .explosionResistance(0.5f)
+            .fireResistance(0.5f)
+            .projectileResistance(0.5f)
             .build();
 
-    public LucanBoss(EntityType<? extends Monster> type, Level level) {
+    private static final EntityConfig CONFIG =
+            new EntityConfig.Builder()
+                    .xpReward(100)
+                    .skinCount(1)
+                    .build();
 
-        super(type, level, "lucan_boss", CONFIG);
+    public LucanBoss(EntityType<? extends Monster> type, Level level) {
+        super(type, level, "lucan_boss", ATTRIBUTES, CONFIG);
         this.getBossComponent();
     }
 
-    public static AttributeSupplier setAttributes() {
-        return createAttributeSupplier(CONFIG);
+    public static AttributeSupplier createAttributes() {
+        return new AttributeManager(ATTRIBUTES).build();
     }
 }

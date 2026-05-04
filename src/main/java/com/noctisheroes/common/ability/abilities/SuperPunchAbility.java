@@ -193,12 +193,6 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
 
         // Efeito crítico no ponto de impacto
         AbilityParticleEffects.spawnCriticalHitEffect(level, target.position().add(0, 1, 0));
-
-        // =============================
-        // 📢 BROADCAST
-        // =============================
-
-        broadcast(level, "§e» §6Super Soco Ativado!");
     }
 
     /**
@@ -265,8 +259,6 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
                     Level.ExplosionInteraction.MOB
             );
 
-            // Broadcast de impacto
-            broadcast(level, "§c» §4IMPACTO DEVASTADOR!");
         }
     }
 
@@ -290,18 +282,5 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
         return true;
     }
 
-    // =============================
-    // 🛠️ UTILITÁRIOS
-    // =============================
 
-    /**
-     * Envia mensagem para todos os players no servidor.
-     */
-    private void broadcast(Level level, String msg) {
-        if (level instanceof ServerLevel serverLevel) {
-            for (var player : serverLevel.players()) {
-                player.displayClientMessage(Component.literal(msg), false);
-            }
-        }
-    }
 }

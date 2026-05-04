@@ -1,7 +1,10 @@
 package com.noctisheroes.entity;
 
+import com.noctisheroes.common.config.AttributeConfig;
+import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.managers.AbilityManager;
 import com.noctisheroes.common.combat.damage.DamageContext;
+import com.noctisheroes.common.managers.AttributeManager;
 import com.noctisheroes.common.managers.DamageManager;
 import com.noctisheroes.entity.handlers.MeleeAttackHandler;
 import net.minecraft.nbt.CompoundTag;
@@ -13,6 +16,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -50,7 +54,8 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     // 📦 CONSTANTES & CACHE
     // =============================
 
-    private DamageManager damageManager;
+
+    private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
     private static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("animation.viltrumite.walk");
     private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.viltrumite.idle");
 
@@ -71,16 +76,22 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         return entityTag;
     }
 
+    private DamageManager damageManager;
+    private AttributeManager attributesConfig;
+    private EntityConfig config;
     private final String entityTag;
-    private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
+
 
     // =============================
     // 🏗️ CONSTRUTOR
     // =============================
 
-    protected NoctisEntity(EntityType<? extends Monster> entityType, Level level, String entityTag) {
-        super(entityType, level);
-        this.entityTag = entityTag;
+    protected NoctisEntity(EntityType<? extends Monster> type, Level level, String tag, AttributeConfig attributes, EntityConfig config) {
+        super(type, level);
+        this.entityTag = tag;
+        this.attributesConfig = new AttributeManager(attributes);
+        this.config = config;
+        this.xpReward = config.xpReward;
         this.damageManager = new DamageManager();
     }
 
@@ -221,7 +232,9 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     // 🔗 MÉTODOS ABSTRATOS
     // =============================
 
-    protected abstract int getSkinCount();
+    protected int getSkinCount() {
+        return this.config.skinCount;
+    }
 
     public DamageManager getDamageProfile() {
         return damageManager;
@@ -230,4 +243,5 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     public AbilityManager<NoctisEntity> getAbilityManager() {
         return abilityManager;
     }
+
 }

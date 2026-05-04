@@ -1,5 +1,7 @@
 package com.noctisheroes.entity.entities.viltrumite.base;
 
+import com.noctisheroes.common.config.AttributeConfig;
+import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.entity.components.BossComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
@@ -15,17 +17,20 @@ import net.minecraft.world.level.Level;
  * - Separation of Concerns
  * - Fácil criação de novos bosses
  */
-public abstract class ViltrumiteBoss extends ViltrumiteVariant {
+public abstract class ViltrumiteBoss extends AbstractViltrumite{
 
     private final BossComponent boss;
+    private static final float randomFlightToggleChance = 0.001f;
+    private static final float combatFlightToggleChance = 0.02f;
+
 
     // =============================
     // 🏗️ CONSTRUTOR
     // =============================
 
     protected ViltrumiteBoss(EntityType<? extends Monster> type, Level level,
-                             String tag, ViltrumiteConfig config) {
-        super(type, level, tag, config);
+                             String tag, AttributeConfig attribute, EntityConfig config) {
+        super(type, level, tag, attribute, config);
         this.boss = new BossComponent(this);
     }
 
@@ -49,6 +54,16 @@ public abstract class ViltrumiteBoss extends ViltrumiteVariant {
     public void stopSeenByPlayer(ServerPlayer player) {
         super.stopSeenByPlayer(player);
         this.boss.removePlayer(player);
+    }
+
+    @Override
+    protected float getRandomFlightToggleChance() {
+        return randomFlightToggleChance;
+    }
+
+    @Override
+    protected float getCombatFlightChance() {
+        return this.combatFlightToggleChance;
     }
 
     // =============================

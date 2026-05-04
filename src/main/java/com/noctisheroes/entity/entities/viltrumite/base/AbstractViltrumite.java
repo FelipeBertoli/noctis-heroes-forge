@@ -3,11 +3,13 @@ package com.noctisheroes.entity.entities.viltrumite.base;
 import com.noctisheroes.common.ability.helpers.AbilityParticleEffects;
 import com.noctisheroes.common.ability.abilities.DestructiveDashAbility;
 import com.noctisheroes.common.ability.abilities.SuperPunchAbility;
+import com.noctisheroes.common.config.AttributeConfig;
+import com.noctisheroes.common.config.EntityConfig;
+import com.noctisheroes.common.tags.DamageTags;
 import com.noctisheroes.entity.NoctisEntity;
 import com.noctisheroes.entity.ai.goals.FlyingChaseGoal;
 import com.noctisheroes.entity.ai.states.FlightState;
 import net.minecraft.network.syncher.*;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
@@ -75,21 +77,20 @@ public abstract class AbstractViltrumite extends NoctisEntity {
     private static final int SONIC_BOOM_INTERVAL = 2; // A cada 2 ticks em HUNT_FLIGHT
 
     // =============================
-    // 🛡️ PROTEÇÕES
-    // =============================
-
-    private static final float FIRE_RESISTANCE = 0.5f;      // 50% de resistência a fogo
-    private static final float PROJECTILE_RESISTANCE = 0.6f; // 60% de resistência a projéteis
-
-    // =============================
     // 🏗️ CONSTRUTOR
     // =============================
 
-    protected AbstractViltrumite(EntityType<? extends Monster> type, Level level, String tag) {
-        super(type, level, tag);
+    protected AbstractViltrumite(EntityType<? extends Monster> type, Level level, String tag, AttributeConfig attributes, EntityConfig config) {
+        super(type, level, tag, attributes, config);
         this.moveControl = new FlyingMoveControl(this, 10, true);
         this.getAbilityManager().register(new DestructiveDashAbility());
         this.getAbilityManager().register(new SuperPunchAbility());
+        this.getDamageProfile()
+                .ignoreFallDamage()
+                .resist(DamageTags.FIRE, attributes.fireResistance)
+                .resist(DamageTags.EXPLOSION, 0.5f)
+                .weakTo(DamageTags.SONIC, 1.0f)
+                .immuneTo("viltrumite");
     }
 
     // =============================
@@ -125,7 +126,6 @@ public abstract class AbstractViltrumite extends NoctisEntity {
         this.stateTimer = 0;
         this.ticksSinceFlightChange = 0;
     }
-
 
 
     // =============================
@@ -332,11 +332,6 @@ public abstract class AbstractViltrumite extends NoctisEntity {
             sonicBoomTicks = 0;
         }
     }
-
-    // =============================
-    // 🛡️ PROTEÇÕES VILTRUMITA
-    // =============================
-
 
     // =============================
     // ⚙️ CONFIG OVERRIDES

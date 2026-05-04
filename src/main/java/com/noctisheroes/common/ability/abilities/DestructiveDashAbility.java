@@ -195,12 +195,6 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
 
         // Efeito crítico
         AbilityParticleEffects.spawnCriticalHitEffect(level, target.position().add(0, 1, 0));
-
-        // =============================
-        // 📢 BROADCAST
-        // =============================
-
-        broadcastMessage(level, "§c» §6Dash Destrutivo!");
     }
 
     /**
@@ -256,7 +250,6 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
                 Level.ExplosionInteraction.MOB
         );
 
-        broadcastMessage(level, "§c» §4IMPACTO DESTRUTIVO!");
     }
 
     @Override
@@ -281,18 +274,4 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
         return true;
     }
 
-    // =============================
-    // 🛠️ UTILITÁRIOS
-    // =============================
-
-    /**
-     * Envia mensagem para todos os players.
-     */
-    private void broadcastMessage(Level level, String msg) {
-        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-            for (var player : serverLevel.players()) {
-                player.displayClientMessage(net.minecraft.network.chat.Component.literal(msg), false);
-            }
-        }
-    }
 }
