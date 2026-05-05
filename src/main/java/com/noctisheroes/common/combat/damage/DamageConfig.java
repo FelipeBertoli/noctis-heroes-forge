@@ -31,6 +31,15 @@ public class DamageConfig {
         if (source.getEntity() instanceof NoctisEntity attacker) {
             tags.add(attacker.getEntityTag());
         }
+
+        if (!isFire() && !isExplosion() && !isProjectile()) {
+            tags.add(DamageTags.PHYSICAL);
+        }
+
+        if (source.is(DamageTypeTags.BYPASSES_ARMOR)) {
+            tags.add(DamageTags.TRUE_DAMAGE);
+        }
+
     }
 
     public boolean hasTag(String tag) {
@@ -40,4 +49,26 @@ public class DamageConfig {
     public DamageSource getSource() {
         return source;
     }
+
+    public boolean isTrueDamage() {
+        return hasTag(DamageTags.TRUE_DAMAGE);
+    }
+
+    public boolean isPhysical() {
+        return hasTag(DamageTags.PHYSICAL);
+    }
+
+    public boolean isFire() {
+        return hasTag(DamageTags.FIRE);
+    }
+
+    public boolean isExplosion() {
+        return hasTag(DamageTags.EXPLOSION);
+    }
+
+    public boolean isProjectile() {
+        return hasTag(DamageTags.PROJECTILE);
+    }
+
+
 }

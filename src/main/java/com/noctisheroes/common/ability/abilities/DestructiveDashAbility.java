@@ -64,6 +64,11 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
     }
 
     @Override
+    public int getPriority() {
+        return 10;
+    }
+
+    @Override
     public boolean canUse(NoctisEntity entity) {
         var target = entity.getTarget();
         if (target == null) return false;

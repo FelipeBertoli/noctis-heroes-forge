@@ -7,4 +7,5 @@ public class DamageTags {
     public static final String EXPLOSION = "explosion";
     public static final String SONIC = "sonic";
     public static final String PROJECTILE = "projectile";
+    public static final String TRUE_DAMAGE = "true_damage";
 }

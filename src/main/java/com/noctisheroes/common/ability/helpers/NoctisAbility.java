@@ -22,4 +22,9 @@ public interface NoctisAbility<T extends NoctisEntity> {
     RawAnimation getAnimation(); // opcional
 
     boolean overridesAttackAnimation();
+
+    default int getPriority() {
+        return 0;
+    }
+
 }

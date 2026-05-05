@@ -1,13 +1,15 @@
 package com.noctisheroes.entity;
 
 import com.noctisheroes.common.attribute.AttributeConfig;
+import com.noctisheroes.common.attribute.AttributeManager;
+import com.noctisheroes.common.combat.rage.RageConfig;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.ability.helpers.AbilityManager;
 import com.noctisheroes.common.combat.damage.DamageConfig;
-import com.noctisheroes.common.attribute.AttributeManager;
 import com.noctisheroes.common.combat.damage.DamageManager;
 import com.noctisheroes.common.effect.EffectManager;
 import com.noctisheroes.entity.ai.states.VisualState;
+import com.noctisheroes.entity.components.RageComponent;
 import com.noctisheroes.entity.handlers.MeleeAttackHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -41,10 +43,6 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public abstract class NoctisEntity extends Monster implements GeoEntity {
-    // =============================
-    // 📦 CONSTANTES & CACHE
-    // =============================
-
 
     private static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("animation.humanoid.walk");
     private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.humanoid.idle");
@@ -56,9 +54,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     private static final EntityDataAccessor<Integer> SKIN_ID =
             SynchedEntityData.defineId(NoctisEntity.class, EntityDataSerializers.INT);
 
-    // =============================
-    // 🎯 CAMPOS ENCAPSULADOS
-    // =============================
 
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private final MeleeAttackHandler<NoctisEntity> attackHandler = new MeleeAttackHandler<>();
@@ -67,30 +62,30 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         return entityTag;
     }
 
-    private DamageManager damageManager;
-    private AttributeManager attributesConfig;
+    private final DamageManager damageManager;
     private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
     private final EffectManager effectManager = new EffectManager();
-    private EntityConfig config;
+    private final EntityConfig config;
+    private final AttributeConfig attributeConfig;
+    private RageComponent rage;
     private final String entityTag;
-
-
-    // =============================
-    // 🏗️ CONSTRUTOR
-    // =============================
 
     protected NoctisEntity(EntityType<? extends Monster> type, Level level, String tag, AttributeConfig attributes, EntityConfig config) {
         super(type, level);
         this.entityTag = tag;
-        this.attributesConfig = new AttributeManager(attributes);
+        this.attributeConfig = attributes;
         this.config = config;
         this.xpReward = config.xpReward;
         this.damageManager = new DamageManager();
     }
 
-    // =============================
-    // 📊 DADOS SINCRONIZADOS
-    // =============================
+    protected void initRage(RageConfig config) {
+        this.rage = new RageComponent(this);
+    }
+
+    public RageComponent getRage() {
+        return rage;
+    }
 
     @Override
     protected void defineSynchedData() {
@@ -107,10 +102,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
             this.entityData.set(SKIN_ID, id);
         }
     }
-
-    // =============================
-    // 🎬 ANIMAÇÕES (GECKOLIB)
-    // =============================
 
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -139,7 +130,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     }
 
     // =============================
-    // 🧠 OBJETIVOS DE IA
+    // 🧠 OBJECTIVES DE IA
     // =============================
 
     @Override
@@ -170,10 +161,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, IronGolem.class, false));
     }
 
-    // =============================
-    // 🔄 TICK & PERSISTÊNCIA
-    // =============================
-
     @Override
     public void tick() {
         super.tick();
@@ -183,11 +170,14 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
             effectManager.tick(this);
         }
 
-        // efeito de transição visual
         boolean isDamaged = this.getVisualState() == VisualState.DAMAGED;
 
         if (isDamaged && !wasDamaged) {
             triggerDamageTransitionEffects();
+        }
+
+        if (!level().isClientSide && rage != null) {
+            rage.tick();
         }
 
         wasDamaged = isDamaged;
@@ -205,7 +195,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
                 0.6f
         );
 
-        // partículas simples
         ((ServerLevel) this.level()).sendParticles(
                 net.minecraft.core.particles.ParticleTypes.DAMAGE_INDICATOR,
                 this.getX(), this.getY(0.5), this.getZ(),
@@ -237,10 +226,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         }
     }
 
-    // =============================
-    // 💥 DANO DIRECIONADO
-    // =============================
-
     @Override
     public boolean hurt(DamageSource source, float amount) {
 
@@ -251,6 +236,10 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
 
         amount = damageManager.applyModifiers(ctx, amount);
 
+        if (rage != null) {
+            rage.addFromDamage(amount);
+        }
+
         return super.hurt(source, amount);
     }
 
@@ -258,7 +247,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     public boolean causeFallDamage(float fallDistance, float damageMultiplier, DamageSource source) {
 
         if (!this.getDamageProfile().shouldTakeFallDamage()) {
-            return false; // cancela dano
+            return false;
         }
 
         return super.causeFallDamage(fallDistance, damageMultiplier, source);
@@ -269,7 +258,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         float max = this.getMaxHealth();
 
         float threshold = this.config.damageThreshold;
-        // você vai adicionar isso no EntityConfig
 
         if (hp / max <= threshold) {
             return VisualState.DAMAGED;
@@ -278,7 +266,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         return VisualState.NORMAL;
     }
     // =============================
-    // 🔗 MÉTODOS ABSTRATOS
+    // 🔗 ABSTRACTS METHODS
     // =============================
 
     protected int getSkinCount() {
@@ -296,4 +284,9 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     public EffectManager getEffectManager() {
         return effectManager;
     }
+
+    public AttributeConfig getAttributeConfig() {
+        return this.attributeConfig;
+    }
+
 }

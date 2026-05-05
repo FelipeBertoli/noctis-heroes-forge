@@ -50,13 +50,18 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     // =============================
 
     @Override
-    public String getId() {
-        return "super_punch";
+    public int getCooldown() {
+        return 30;
     }
 
     @Override
-    public int getCooldown() {
-        return 70;
+    public int getPriority() {
+        return 30;
+    }
+
+    @Override
+    public String getId() {
+        return "super_punch";
     }
 
     @Override
@@ -123,10 +128,9 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     // 🥊 EXECUÇÃO DO SOCO
     // =============================
 
-    private void performPunch(NoctisEntity entity, LivingEntity target) {
+    protected void performPunch(NoctisEntity entity, LivingEntity target) {
 
-        float baseDamage = (float) entity.getAttributeValue(Attributes.ATTACK_DAMAGE);
-        float damage = baseDamage * DAMAGE_MULTIPLIER;
+       float damage = getDamage(entity);
 
         target.hurt(entity.damageSources().mobAttack(entity), damage);
 
@@ -148,7 +152,7 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     // 💥 IMPACTO FINAL
     // =============================
 
-    private void triggerFinalImpact(NoctisEntity entity, LivingEntity target, Level level) {
+    protected void triggerFinalImpact(NoctisEntity entity, LivingEntity target, Level level) {
         impactTriggered = true;
 
         Vec3 pos = target.position();
@@ -254,5 +258,10 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     @Override
     public boolean overridesAttackAnimation() {
         return true;
+    }
+
+    protected float getDamage(NoctisEntity entity) {
+        float baseDamage = (float) entity.getAttributeValue(Attributes.ATTACK_DAMAGE);
+        return baseDamage * DAMAGE_MULTIPLIER;
     }
 }

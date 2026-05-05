@@ -14,6 +14,10 @@ public class EffectInstance {
         this.remainingTicks = config.duration;
     }
 
+    public EffectType getType() {
+        return config.type;
+    }
+
     public boolean tick(NoctisEntity entity) {
 
         tickCounter++;

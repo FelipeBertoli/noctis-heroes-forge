@@ -13,7 +13,7 @@ public class EffectManager {
     public void addEffect(EffectConfig config) {
 
         if (!config.stackable) {
-            effects.removeIf(e -> e.getClass() == config.getClass());
+            effects.removeIf(e -> e.getType() == config.type);
         }
 
         effects.add(new EffectInstance(config));
