@@ -1,8 +1,10 @@
 {
   "entity.noctisheroes.viltrumite": "Viltrumite",
+  "entity.noctisheroes.drakari_soldier": "Drakari Soldier",
   "entity.noctisheroes.thragg_boss": "Regent Thragg",
   "entity.noctisheroes.lucan_boss": "Lucan",
   "item.noctisheroes.viltrumite_spawn_egg": "Viltrumite Spawn Egg",
+  "item.noctisheroes.drakari_soldier_spawn_egg": "Drakari Soldier Spawn Egg",
   "item.noctisheroes.lucan_boss_spawn_egg": "Lucan Spawn Egg",
   "item.noctisheroes.thragg_boss_spawn_egg": "Regent Thragg Spawn Egg",
   "itemGroup.noctisheroes.spawn_eggs": "Noctis Heroes - Spawn Eggs"

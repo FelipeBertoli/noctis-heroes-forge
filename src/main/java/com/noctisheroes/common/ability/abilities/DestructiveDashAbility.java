@@ -43,7 +43,7 @@ public class DestructiveDashAbility implements NoctisAbility<NoctisEntity> {
     private static final double DASH_SPEED = 2.8;        // Velocidade do dash
     private static final float DAMAGE_MULTIPLIER = 1.5f;
     private static final double KNOCKBACK_STRENGTH = 4.5;
-    private static final float EXPLOSION_RADIUS = 3.0f;
+    private static final float EXPLOSION_RADIUS = 2.0f;
     private static final double HIT_DETECTION_RANGE = 3.5;
     private static final double IMPACT_DETECTION_RADIUS = 3.0;
 

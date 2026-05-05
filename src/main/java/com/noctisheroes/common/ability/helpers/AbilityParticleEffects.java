@@ -1,9 +1,11 @@
 package com.noctisheroes.common.ability.helpers;
 
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 /**
  * Gerenciador de partículas para efeitos visuais de abilities.
@@ -71,6 +73,34 @@ public class AbilityParticleEffects {
         }
     }
 
+    public static void spawnKineticBoomEffect(Level level, Vec3 position, double intensity) {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+
+        int particleCount = (int) (8 + intensity * 4);
+        double radius = 1.5 * intensity;
+
+        DustParticleOptions purple = new DustParticleOptions(
+                new Vector3f(0.443f, 0.0f, 0.592f),
+                (float) intensity
+        );
+
+        for (int i = 0; i < particleCount; i++) {
+            double angle = (Math.PI * 2 * i) / particleCount;
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            double y = (Math.random() - 0.5) * radius;
+
+            serverLevel.sendParticles(
+                    purple,
+                    position.x + x,
+                    position.y + y,
+                    position.z + z,
+                    1,
+                    x * 0.1, y * 0.1, z * 0.1,
+                    0.05
+            );
+        }
+    }
     /**
      * Rastro contínuo de sonic boom para hunt flight.
      * Deixa um caminho visual de quebra de som.
@@ -211,7 +241,147 @@ public class AbilityParticleEffects {
             );
         }
     }
+    public static void spawnKineticHuntFlightTrail(Level level, Vec3 position, Vec3 velocity) {
+        if (!(level instanceof ServerLevel serverLevel)) return;
 
+        double speed = velocity.length();
+        if (speed < 0.5) return;
+
+        Vec3 direction = velocity.normalize();
+
+        // =============================
+        // 🎨 CORES
+        // =============================
+
+        // Roxo principal (#710097)
+        DustParticleOptions corePurple = new DustParticleOptions(
+                new Vector3f(0.443f, 0.0f, 0.592f),
+                1.4f
+        );
+
+        // Roxo claro (brilho energético)
+        DustParticleOptions glowPurple = new DustParticleOptions(
+                new Vector3f(0.75f, 0.2f, 1.0f),
+                0.8f
+        );
+
+        int density = Math.min(12, (int) (speed * 6));
+
+        // =============================
+        // 💥 CAMADA 1 — NÚCLEO (FORTE)
+        // =============================
+
+        for (int i = 0; i < density; i++) {
+            double spread = 0.3;
+
+            serverLevel.sendParticles(
+                    corePurple,
+                    position.x,
+                    position.y + 0.5,
+                    position.z,
+                    1,
+                    (Math.random() - 0.5) * spread,
+                    (Math.random() - 0.5) * spread,
+                    (Math.random() - 0.5) * spread,
+                    0.02
+            );
+        }
+
+        // =============================
+        // 🌀 CAMADA 2 — ESPIRAL CINÉTICA
+        // =============================
+
+        for (int i = 0; i < density; i++) {
+            double angle = (Math.PI * 2 * i) / density;
+            double radius = 0.8 + speed * 0.4;
+
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            double y = Math.sin(angle * 2) * 0.4;
+
+            serverLevel.sendParticles(
+                    corePurple,
+                    position.x + x,
+                    position.y + y,
+                    position.z + z,
+                    1,
+                    -velocity.x * 0.15,
+                    -velocity.y * 0.05,
+                    -velocity.z * 0.15,
+                    0.01
+            );
+        }
+
+        // =============================
+        // ⚡ CAMADA 3 — AURA ENERGÉTICA
+        // =============================
+
+        for (int i = 0; i < density / 2; i++) {
+            double angle = Math.random() * Math.PI * 2;
+            double radius = 1.2 + speed * 0.3;
+
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+
+            serverLevel.sendParticles(
+                    glowPurple,
+                    position.x + x,
+                    position.y + (Math.random() - 0.5),
+                    position.z + z,
+                    1,
+                    0, 0.02, 0,
+                    0.03
+            );
+        }
+
+        // =============================
+        // 💨 CAMADA 4 — ONDA DE CHOQUE (frente)
+        // =============================
+
+        if (speed > 1.2) {
+            Vec3 front = position.add(direction.scale(1.5));
+
+            for (int i = 0; i < 6; i++) {
+                double angle = (Math.PI * 2 * i) / 6;
+                double radius = 0.6;
+
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+
+                serverLevel.sendParticles(
+                        ParticleTypes.DRAGON_BREATH,
+                        front.x + x,
+                        front.y,
+                        front.z + z,
+                        1,
+                        x * 0.2,
+                        0.05,
+                        z * 0.2,
+                        0.2
+                );
+            }
+        }
+
+        // =============================
+        // 💥 CAMADA 5 — RASTRO DE PRESSÃO (trás)
+        // =============================
+
+        Vec3 back = position.subtract(direction.scale(0.8));
+
+        for (int i = 0; i < 4; i++) {
+            serverLevel.sendParticles(
+                    ParticleTypes.DRAGON_BREATH,
+                    back.x,
+                    back.y + (Math.random() - 0.5),
+                    back.z,
+                    1,
+                    -velocity.x * 0.2,
+                    -velocity.y * 0.1,
+                    -velocity.z * 0.2,
+                    0.1
+            );
+        }
+    }
     /**
      * Cria efeito de quebra de som direcionado (ao longo do caminho do golpe).
      */

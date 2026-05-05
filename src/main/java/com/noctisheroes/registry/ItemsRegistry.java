@@ -40,4 +40,14 @@ public class ItemsRegistry {
                             new net.minecraft.world.item.Item.Properties()
                     )
             );
+
+    public static final RegistryObject<ForgeSpawnEggItem> DRAKARI_SOLDIER_SPAWN_EGG =
+            ITEMS.register("drakari_soldier_spawn_egg", () ->
+                    new ForgeSpawnEggItem(
+                            EntitiesRegistry.DRAKARI_SOLDIER,
+                            0x161518,
+                            0x8d00bd,  // vermelho
+                            new net.minecraft.world.item.Item.Properties()
+                    )
+            );
 }

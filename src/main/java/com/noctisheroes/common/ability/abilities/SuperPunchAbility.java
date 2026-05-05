@@ -2,26 +2,21 @@ package com.noctisheroes.common.ability.abilities;
 
 import com.noctisheroes.common.ability.helpers.ImpactDetector;
 import com.noctisheroes.common.ability.helpers.NoctisAbility;
-import com.noctisheroes.entity.NoctisEntity;
-import net.minecraft.core.BlockPos;
 import com.noctisheroes.common.ability.helpers.AbilityParticleEffects;
-import net.minecraft.network.chat.Component;
+import com.noctisheroes.entity.NoctisEntity;
+
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.state.BlockState;
+
 import software.bernie.geckolib.core.animation.RawAnimation;
 
 /**
- * Ability de Super Soco com impacto explosivo.
- *
- * ✅ Sistema melhorado:
- * - Detecção robusta de impacto
- * - Partículas de quebra de som
- * - Explosão ao atingir superfícies próximas
- * - Knockback controlado
- * - Sistema de fase (preparação, execução, impacto)
+ * Super Punch com destruição contínua + impacto final.
  */
 public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
 
@@ -32,26 +27,26 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     private int ticks;
     private LivingEntity hitTarget;
     private boolean impactTriggered;
-    private Vec3 punchStartPosition;
+    private Vec3 lastTargetPos;
 
     // =============================
-    // ⚙️ CONFIGURAÇÃO
+    // ⚙️ CONFIG
     // =============================
 
-    private static final int HIT_FRAME = 4;              // Frame do golpe
-    private static final int ABILITY_DURATION = 20;      // Duração total
-    private static final int IMPACT_CHECK_DELAY = 2;     // Delay para verificar impacto
+    private static final int HIT_FRAME = 4;
+    private static final int ABILITY_DURATION = 25;
 
-    private static final double PUNCH_SPEED = 3.5;       // Velocidade do knockback
-    private static final double PUNCH_VERTICAL_BOOST = 0.9;
+    private static final double PUNCH_SPEED = 3.5;
+    private static final double PUNCH_VERTICAL = 0.9;
+
     private static final float DAMAGE_MULTIPLIER = 1.2f;
-    private static final float EXPLOSION_RADIUS = 2.5f;
-    private static final double IMPACT_DETECTION_RADIUS = 2.5; // Raio de detecção
 
-    private static final double PUNCH_INTENSITY = 1.5;   // Intensidade dos efeitos
+    private static final float FINAL_EXPLOSION_RADIUS = 2.5f;
+
+    private static final float DESTRUCTION_RADIUS = 3.0f; // 🔥 área de destruição contínua
 
     // =============================
-    // 🎯 ABILITY INTERFACE
+    // 🎯 ABILITY
     // =============================
 
     @Override
@@ -70,8 +65,7 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
         if (target == null) return false;
 
         double dist = entity.distanceTo(target);
-        // Usa ability quando está numa faixa específica de distância
-        return dist > 2.0 && dist < 8.0 && entity.getRandom().nextFloat() < 0.04f;
+        return dist > 2 && dist < 8 && entity.getRandom().nextFloat() < 0.04f;
     }
 
     @Override
@@ -79,7 +73,7 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
         ticks = 0;
         hitTarget = null;
         impactTriggered = false;
-        punchStartPosition = entity.position();
+        lastTargetPos = null;
 
         entity.setNoGravity(true);
     }
@@ -97,170 +91,150 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
         }
 
         // =============================
-        // ⚡ FASE 1: PREPARAÇÃO (0-3 ticks)
+        // 🥊 FRAME DO SOCO
         // =============================
-        if (ticks < HIT_FRAME) {
-            handlePreparationPhase(entity, target);
+        if (ticks == HIT_FRAME) {
+            performPunch(entity, target);
         }
 
         // =============================
-        // 🥊 FASE 2: EXECUÇÃO DO SOCO (frame 4)
+        // 💥 DESTRUIÇÃO CONTÍNUA
         // =============================
-        else if (ticks == HIT_FRAME) {
-            handlePunchExecution(entity, target, level);
+        if (hitTarget != null) {
+
+            if (lastTargetPos != null) {
+                destroyBlocksAlongPath(level, lastTargetPos, hitTarget.position(), DESTRUCTION_RADIUS);
+            }
+
+            lastTargetPos = hitTarget.position();
+
+            // Detecta impacto final
+            if (!impactTriggered && hasHitSurface(level, hitTarget)) {
+                triggerFinalImpact(entity, hitTarget, level);
+            }
         }
 
-        // =============================
-        // 💥 FASE 3: RASTREAMENTO DE IMPACTO
-        // =============================
-        else if (ticks > HIT_FRAME) {
-            handleImpactTracking(entity, target, level);
-        }
-
-        // =============================
-        // 🏁 FINALIZAÇÃO
-        // =============================
         if (ticks >= ABILITY_DURATION) {
             stop(entity);
         }
     }
 
-    /**
-     * Fase 1: Preparação para o soco (animação de carga).
-     */
-    private void handlePreparationPhase(NoctisEntity entity, LivingEntity target) {
-        // O mob se posiciona para atingir o alvo
-        Vec3 direction = target.position()
-                .subtract(entity.position())
-                .normalize();
+    // =============================
+    // 🥊 EXECUÇÃO DO SOCO
+    // =============================
 
-        // Partículas de preparação (quebra de som suave)
-        if (ticks % 2 == 0) {
-            AbilityParticleEffects.spawnAirBreakerEffect(
-                    entity.level(),
-                    entity.position().add(0, entity.getBbHeight() * 0.5, 0),
-                    0.5
-            );
-        }
-    }
-
-    /**
-     * Fase 2: Execução do soco (frame do golpe).
-     */
-    private void handlePunchExecution(NoctisEntity entity, LivingEntity target, Level level) {
-        // =============================
-        // 🎯 APLICAR DANO
-        // =============================
+    private void performPunch(NoctisEntity entity, LivingEntity target) {
 
         float baseDamage = (float) entity.getAttributeValue(Attributes.ATTACK_DAMAGE);
-        float finalDamage = baseDamage * DAMAGE_MULTIPLIER;
+        float damage = baseDamage * DAMAGE_MULTIPLIER;
 
-        target.hurt(entity.damageSources().mobAttack(entity), finalDamage);
+        target.hurt(entity.damageSources().mobAttack(entity), damage);
 
         hitTarget = target;
+        lastTargetPos = target.position();
 
-        // =============================
-        // 🚀 APLICAR KNOCKBACK
-        // =============================
-
-        Vec3 direction = target.position()
-                .subtract(entity.position())
-                .normalize();
+        Vec3 direction = target.position().subtract(entity.position()).normalize();
 
         target.setDeltaMovement(
                 direction.x * PUNCH_SPEED,
-                PUNCH_VERTICAL_BOOST,
+                PUNCH_VERTICAL,
                 direction.z * PUNCH_SPEED
         );
 
-        // =============================
-        // ✨ PARTÍCULAS DE SOCO
-        // =============================
-
-        Vec3 punchCenter = entity.position().add(
-                0,
-                entity.getBbHeight() * 0.7,
-                0
-        );
-
-        // Quebra de som ao longo do caminho
-        AbilityParticleEffects.spawnDirectionalSonicBoom(
-                level,
-                punchCenter,
-                target.position(),
-                PUNCH_INTENSITY
-        );
-
-        // Efeito crítico no ponto de impacto
-        AbilityParticleEffects.spawnCriticalHitEffect(level, target.position().add(0, 1, 0));
+        AbilityParticleEffects.spawnCriticalHitEffect(entity.level(), target.position());
     }
 
-    /**
-     * Fase 3: Rastreamento de impacto com a superfície.
-     */
-    private void handleImpactTracking(NoctisEntity entity, LivingEntity target, Level level) {
-        // Só verifica impacto se o alvo foi atingido
-        if (hitTarget == null || impactTriggered) {
-            return;
-        }
+    // =============================
+    // 💥 IMPACTO FINAL
+    // =============================
 
-        // Aguarda alguns ticks para o alvo estar em movimento
-        if (ticks < HIT_FRAME + IMPACT_CHECK_DELAY) {
-            return;
-        }
-
-        // =============================
-        // 📍 DETECTAR IMPACTO
-        // =============================
-
-        boolean hasNearbyBlock = ImpactDetector.hasNearbyCollision(
-                level,
-                target.position(),
-                IMPACT_DETECTION_RADIUS
-        );
-
-        if (hasNearbyBlock) {
-            triggerImpactEffect(entity, target, level);
-        }
-    }
-
-    /**
-     * Ativa o efeito de impacto (explosão, partículas).
-     */
-    private void triggerImpactEffect(NoctisEntity entity, LivingEntity target, Level level) {
+    private void triggerFinalImpact(NoctisEntity entity, LivingEntity target, Level level) {
         impactTriggered = true;
 
-        Vec3 impactPos = target.position();
+        Vec3 pos = target.position();
 
-        // =============================
-        // 💥 EFEITOS VISUAIS
-        // =============================
+        // 🔥 apenas visual
+        AbilityParticleEffects.spawnImpactEffect(level, pos, 1.5);
 
-        // Partículas de impacto massivas
-        AbilityParticleEffects.spawnImpactEffect(level, impactPos, PUNCH_INTENSITY);
+        // ⚠️ explosão leve (ou remove se quiser zero dano)
+        level.explode(
+                entity,
+                pos.x,
+                pos.y,
+                pos.z,
+                FINAL_EXPLOSION_RADIUS,
+                Level.ExplosionInteraction.MOB
+        );
+    }
 
-        // Explosão de blocos
-        if (level instanceof ServerLevel serverLevel) {
+    // =============================
+    // 🧠 DETECÇÃO DE SUPERFÍCIE
+    // =============================
 
-            // Encontra o bloco mais próximo para som
-            BlockPos impactBlock = ImpactDetector.findNearestImpactBlock(
-                    level,
-                    impactPos,
-                    IMPACT_DETECTION_RADIUS
-            );
+    private boolean hasHitSurface(Level level, LivingEntity entity) {
+        return ImpactDetector.hasNearbyCollision(
+                level,
+                entity.position(),
+                2.0
+        );
+    }
 
-            // Causa explosão (quebra blocos fracos)
-            level.explode(
-                    entity,
-                    impactPos.x,
-                    impactPos.y,
-                    impactPos.z,
-                    EXPLOSION_RADIUS,
-                    Level.ExplosionInteraction.MOB
-            );
+    // =============================
+    // 💣 DESTRUIÇÃO CONTÍNUA
+    // =============================
 
+    private void destroyBlocksAlongPath(Level level, Vec3 start, Vec3 end, float radius) {
+        if (!(level instanceof ServerLevel)) return;
+
+        Vec3 direction = end.subtract(start);
+        double distance = direction.length();
+
+        if (distance < 0.1) return;
+
+        direction = direction.normalize();
+
+        int steps = (int) (distance * 3); // precisão alta
+
+        for (int i = 0; i < steps; i++) {
+            double progress = (double) i / steps;
+            Vec3 pos = start.add(direction.scale(distance * progress));
+
+            destroySphere(level, pos, radius);
         }
     }
+
+    private void destroySphere(Level level, Vec3 center, float radius) {
+
+        int r = (int) Math.ceil(radius);
+
+        for (int x = -r; x <= r; x++) {
+            for (int y = -r; y <= r; y++) {
+                for (int z = -r; z <= r; z++) {
+
+                    if (x*x + y*y + z*z > radius * radius) continue;
+
+                    BlockPos pos = BlockPos.containing(
+                            center.x + x,
+                            center.y + y,
+                            center.z + z
+                    );
+
+                    BlockState state = level.getBlockState(pos);
+
+                    if (state.isAir()) continue;
+
+                    // 🔥 evita quebrar blocos muito resistentes (opcional)
+                    if (state.getDestroySpeed(level, pos) > 10f) continue;
+
+                    level.destroyBlock(pos, true);
+                }
+            }
+        }
+    }
+
+    // =============================
+    // 🏁 FINALIZAÇÃO
+    // =============================
 
     @Override
     public void stop(NoctisEntity entity) {
@@ -281,6 +255,4 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     public boolean overridesAttackAnimation() {
         return true;
     }
-
-
 }
