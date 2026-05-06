@@ -1,6 +1,6 @@
 package com.noctisheroes.entity.components;
 
-import com.noctisheroes.common.ability.helpers.AbilityParticleEffects;
+import com.noctisheroes.common.particle.AbilityParticleEffects;
 import com.noctisheroes.entity.NoctisEntity;
 import com.noctisheroes.entity.ai.states.FlightState;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
@@ -274,29 +274,7 @@ public class FlightWarriorComponent {
                 )
         );
 
-        spawnBoostEffect(entity);
+        AbilityParticleEffects.spawnSonicBoomEffect(entity);
     }
 
-    private void spawnBoostEffect(NoctisEntity entity) {
-        if (!(entity.level() instanceof ServerLevel server)) return;
-
-        server.sendParticles(
-                ParticleTypes.EXPLOSION_EMITTER,
-                entity.getX(),
-                entity.getY(0.5),
-                entity.getZ(),
-                1,
-                0, 0, 0,
-                0
-        );
-
-        entity.level().playSound(
-                null,
-                entity.blockPosition(),
-                SoundEvents.GENERIC_EXPLODE,
-                SoundSource.HOSTILE,
-                0.6f,
-                1.2f
-        );
-    }
 }

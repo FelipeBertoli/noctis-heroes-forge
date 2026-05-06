@@ -1,24 +1,20 @@
 package com.noctisheroes.common.ability.abilities;
 
+import com.noctisheroes.common.ability.helpers.AbilityHelper;
 import com.noctisheroes.common.ability.helpers.ImpactDetector;
-import com.noctisheroes.common.ability.helpers.NoctisAbility;
-import com.noctisheroes.common.ability.helpers.AbilityParticleEffects;
+import com.noctisheroes.common.ability.helpers.iNoctisAbility;
+import com.noctisheroes.common.particle.AbilityParticleEffects;
 import com.noctisheroes.entity.NoctisEntity;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.level.block.state.BlockState;
 
 import software.bernie.geckolib.core.animation.RawAnimation;
 
 /**
  * Super Punch com destruição contínua + impacto final.
  */
-public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
+public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
 
     // =============================
     // 📊 ESTADO
@@ -40,10 +36,8 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     private static final double PUNCH_VERTICAL = 0.9;
 
     private static final float DAMAGE_MULTIPLIER = 1.2f;
-
     private static final float FINAL_EXPLOSION_RADIUS = 2.5f;
-
-    private static final float DESTRUCTION_RADIUS = 3.0f; // 🔥 área de destruição contínua
+    private static final float DESTRUCTION_RADIUS = 3.0f;
 
     // =============================
     // 🎯 ABILITY
@@ -103,17 +97,23 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
         }
 
         // =============================
-        // 💥 DESTRUIÇÃO CONTÍNUA
+        // 💥 DESTRUIÇÃO CONTÍNUA + IMPACTO
         // =============================
         if (hitTarget != null) {
 
+            // 🔥 destruição ao longo do caminho
             if (lastTargetPos != null) {
-                destroyBlocksAlongPath(level, lastTargetPos, hitTarget.position(), DESTRUCTION_RADIUS);
+                AbilityHelper.destroyPath(
+                        level,
+                        lastTargetPos,
+                        hitTarget.position(),
+                        DESTRUCTION_RADIUS
+                );
             }
 
             lastTargetPos = hitTarget.position();
 
-            // Detecta impacto final
+            // 💥 impacto final
             if (!impactTriggered && hasHitSurface(level, hitTarget)) {
                 triggerFinalImpact(entity, hitTarget, level);
             }
@@ -130,7 +130,7 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
 
     protected void performPunch(NoctisEntity entity, LivingEntity target) {
 
-       float damage = getDamage(entity);
+        float damage = getDamage(entity);
 
         target.hurt(entity.damageSources().mobAttack(entity), damage);
 
@@ -139,10 +139,11 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
 
         Vec3 direction = target.position().subtract(entity.position()).normalize();
 
-        target.setDeltaMovement(
-                direction.x * PUNCH_SPEED,
-                PUNCH_VERTICAL,
-                direction.z * PUNCH_SPEED
+        AbilityHelper.applyKnockback(
+                target,
+                direction,
+                PUNCH_SPEED,
+                PUNCH_VERTICAL
         );
 
         AbilityParticleEffects.spawnCriticalHitEffect(entity.level(), target.position());
@@ -157,17 +158,13 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
 
         Vec3 pos = target.position();
 
-        // 🔥 apenas visual
         AbilityParticleEffects.spawnImpactEffect(level, pos, 1.5);
 
-        // ⚠️ explosão leve (ou remove se quiser zero dano)
-        level.explode(
+        AbilityHelper.explode(
+                level,
                 entity,
-                pos.x,
-                pos.y,
-                pos.z,
-                FINAL_EXPLOSION_RADIUS,
-                Level.ExplosionInteraction.MOB
+                pos,
+                FINAL_EXPLOSION_RADIUS
         );
     }
 
@@ -181,59 +178,6 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
                 entity.position(),
                 2.0
         );
-    }
-
-    // =============================
-    // 💣 DESTRUIÇÃO CONTÍNUA
-    // =============================
-
-    private void destroyBlocksAlongPath(Level level, Vec3 start, Vec3 end, float radius) {
-        if (!(level instanceof ServerLevel)) return;
-
-        Vec3 direction = end.subtract(start);
-        double distance = direction.length();
-
-        if (distance < 0.1) return;
-
-        direction = direction.normalize();
-
-        int steps = (int) (distance * 3); // precisão alta
-
-        for (int i = 0; i < steps; i++) {
-            double progress = (double) i / steps;
-            Vec3 pos = start.add(direction.scale(distance * progress));
-
-            destroySphere(level, pos, radius);
-        }
-    }
-
-    private void destroySphere(Level level, Vec3 center, float radius) {
-
-        int r = (int) Math.ceil(radius);
-
-        for (int x = -r; x <= r; x++) {
-            for (int y = -r; y <= r; y++) {
-                for (int z = -r; z <= r; z++) {
-
-                    if (x*x + y*y + z*z > radius * radius) continue;
-
-                    BlockPos pos = BlockPos.containing(
-                            center.x + x,
-                            center.y + y,
-                            center.z + z
-                    );
-
-                    BlockState state = level.getBlockState(pos);
-
-                    if (state.isAir()) continue;
-
-                    // 🔥 evita quebrar blocos muito resistentes (opcional)
-                    if (state.getDestroySpeed(level, pos) > 10f) continue;
-
-                    level.destroyBlock(pos, true);
-                }
-            }
-        }
     }
 
     // =============================
@@ -261,7 +205,6 @@ public class SuperPunchAbility implements NoctisAbility<NoctisEntity> {
     }
 
     protected float getDamage(NoctisEntity entity) {
-        float baseDamage = (float) entity.getAttributeValue(Attributes.ATTACK_DAMAGE);
-        return baseDamage * DAMAGE_MULTIPLIER;
+        return AbilityHelper.scaledAttack(entity, DAMAGE_MULTIPLIER);
     }
 }

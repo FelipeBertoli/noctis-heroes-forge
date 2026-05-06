@@ -1,8 +1,11 @@
-package com.noctisheroes.common.ability.helpers;
+package com.noctisheroes.common.particle;
 
+import com.noctisheroes.entity.NoctisEntity;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
@@ -43,34 +46,29 @@ public class AbilityParticleEffects {
             );
         }
     }
-    /**
-     * Cria efeito de quebra de som ao redor da entidade.
-     * Simula compressão do ar (como um sonic boom).
-     */
 
-    public static void spawnSonicBoomEffect(Level level, Vec3 position, double intensity) {
-        if (!(level instanceof ServerLevel serverLevel)) return;
 
-        int particleCount = (int) (8 + intensity * 4);
-        double radius = 1.5 * intensity;
+    public static void spawnSonicBoomEffect(NoctisEntity entity) {
+        if (!(entity.level() instanceof ServerLevel server)) return;
 
-        // Partículas ao redor (esfera)
-        for (int i = 0; i < particleCount; i++) {
-            double angle = (Math.PI * 2 * i) / particleCount;
-            double x = Math.cos(angle) * radius;
-            double z = Math.sin(angle) * radius;
-            double y = (Math.random() - 0.5) * radius;
+        server.sendParticles(
+                ParticleTypes.EXPLOSION_EMITTER,
+                entity.getX(),
+                entity.getY(0.5),
+                entity.getZ(),
+                1,
+                0, 0, 0,
+                0
+        );
 
-            serverLevel.sendParticles(
-                    ParticleTypes.CLOUD,
-                    position.x + x,
-                    position.y + y,
-                    position.z + z,
-                    1,
-                    x * 0.1, y * 0.1, z * 0.1,
-                    0.1
-            );
-        }
+        entity.level().playSound(
+                null,
+                entity.blockPosition(),
+                SoundEvents.GENERIC_EXPLODE,
+                SoundSource.HOSTILE,
+                0.6f,
+                1.2f
+        );
     }
 
     public static void spawnKineticBoomEffect(Level level, Vec3 position, double intensity) {
@@ -140,27 +138,6 @@ public class AbilityParticleEffects {
             );
         }
 
-        // Partículas frontal (ondas de choque)
-//        if (speed > 1.0) {
-//            Vec3 direction = velocity.normalize();
-//            Vec3 frontPos = position.add(direction.scale(1.5));
-//
-//            for (int i = 0; i < 3; i++) {
-//                double angle = (Math.PI * 2 * i) / 3;
-//                double x = Math.cos(angle) * 0.5;
-//                double z = Math.sin(angle) * 0.5;
-//
-//                serverLevel.sendParticles(
-//                        ParticleTypes.EXPLOSION,
-//                        frontPos.x + x,
-//                        frontPos.y,
-//                        frontPos.z + z,
-//                        1,
-//                        x * 0.15, 0, z * 0.15,
-//                        0.12
-//                );
-//            }
-//        }
     }
 
     /**

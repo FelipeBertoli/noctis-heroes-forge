@@ -8,11 +8,11 @@ import java.util.List;
 
 public class AbilityManager<T extends NoctisEntity> {
 
-    private final List<NoctisAbility<T>> abilities = new ArrayList<>();
-    private NoctisAbility<T> currentAbility;
+    private final List<iNoctisAbility<T>> abilities = new ArrayList<>();
+    private iNoctisAbility<T> currentAbility;
     private int cooldownTicks = 0;
 
-    public void register(NoctisAbility<T> ability) {
+    public void register(iNoctisAbility<T> ability) {
         abilities.add(ability);
     }
 
@@ -38,7 +38,7 @@ public class AbilityManager<T extends NoctisEntity> {
         if (cooldownTicks <= 0) {
 
             abilities.stream()
-                    .sorted(Comparator.comparingInt(NoctisAbility<T>::getPriority).reversed())
+                    .sorted(Comparator.comparingInt(iNoctisAbility<T>::getPriority).reversed())
                     .forEach(ability -> {
 
                         if (currentAbility != null) return;
@@ -69,7 +69,7 @@ public class AbilityManager<T extends NoctisEntity> {
         return currentAbility != null;
     }
 
-    public NoctisAbility<T> getCurrentAbility() {
+    public iNoctisAbility<T> getCurrentAbility() {
         return currentAbility;
     }
 }

@@ -3,7 +3,7 @@ package com.noctisheroes.common.ability.helpers;
 import com.noctisheroes.entity.NoctisEntity;
 import software.bernie.geckolib.core.animation.RawAnimation;
 
-public interface NoctisAbility<T extends NoctisEntity> {
+public interface iNoctisAbility<T extends NoctisEntity> {
 
     String getId();
 

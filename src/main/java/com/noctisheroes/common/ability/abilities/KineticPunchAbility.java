@@ -1,7 +1,7 @@
 package com.noctisheroes.common.ability.abilities;
 
 import com.noctisheroes.common.ability.helpers.IResourceAbility;
-import com.noctisheroes.common.combat.rage.IRageUser;
+import com.noctisheroes.common.combat.rage.RageHelper;
 import com.noctisheroes.entity.NoctisEntity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -25,26 +25,23 @@ public class KineticPunchAbility extends SuperPunchAbility
 
     @Override
     public int getPriority() {
-        return 35; // 🔥 mais forte = mais prioridade
+        return 35;
     }
 
     @Override
     protected void performPunch(NoctisEntity entity, LivingEntity target) {
 
-        super.performPunch(entity, target); // 🔥 mantém tudo
+        super.performPunch(entity, target);
 
-        if (entity instanceof IRageUser rageUser) {
+        float rage = RageHelper.getPercent(entity);
 
-            float rage = rageUser.getRage().getPercent();
+        Vec3 dir = target.position().subtract(entity.position()).normalize();
 
-            Vec3 dir = target.position().subtract(entity.position()).normalize();
-
-            target.setDeltaMovement(
-                    target.getDeltaMovement().x + dir.x * rage * 2.0,
-                    target.getDeltaMovement().y + rage * 0.3,
-                    target.getDeltaMovement().z + dir.z * rage * 2.0
-            );
-        }
+        target.setDeltaMovement(
+                target.getDeltaMovement().x + dir.x * rage * 2.0,
+                target.getDeltaMovement().y + rage * 0.3,
+                target.getDeltaMovement().z + dir.z * rage * 2.0
+        );
     }
 
     // =============================
@@ -53,27 +50,18 @@ public class KineticPunchAbility extends SuperPunchAbility
 
     @Override
     public boolean hasResource(NoctisEntity entity) {
-        if (entity instanceof IRageUser rageUser) {
-            return rageUser.getRage().getValue() >= MIN_RAGE;
-        }
-        return false;
+        return RageHelper.getValue(entity) >= MIN_RAGE;
     }
 
     @Override
     public void consumeResource(NoctisEntity entity) {
-        if (entity instanceof IRageUser rageUser) {
-            rageUser.getRage().consume(COST);
-        }
+        RageHelper.consume(entity, COST);
     }
 
     @Override
     protected void triggerFinalImpact(NoctisEntity entity, LivingEntity target, Level level) {
 
-        float scale = 1f;
-
-        if (entity instanceof IRageUser rageUser) {
-            scale += rageUser.getRage().getPercent();
-        }
+        float scale = 1f + RageHelper.getPercent(entity);
 
         level.explode(
                 entity,
@@ -87,13 +75,6 @@ public class KineticPunchAbility extends SuperPunchAbility
 
     @Override
     protected float getDamage(NoctisEntity entity) {
-
-        float base = super.getDamage(entity);
-
-        if (entity instanceof IRageUser rageUser) {
-            return base * (1f + rageUser.getRage().getPercent());
-        }
-
-        return base;
+        return super.getDamage(entity) * (1f + RageHelper.getPercent(entity));
     }
 }
