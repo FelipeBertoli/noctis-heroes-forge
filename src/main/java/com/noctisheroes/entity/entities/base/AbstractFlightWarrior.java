@@ -7,10 +7,16 @@ import com.noctisheroes.entity.ai.goals.FlyingChaseGoal;
 import com.noctisheroes.entity.ai.states.FlightState;
 import com.noctisheroes.entity.components.FlightWarriorComponent;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -20,6 +26,8 @@ import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animation.RawAnimation;
@@ -37,6 +45,14 @@ public class AbstractFlightWarrior extends NoctisEntity implements IFlightCapabl
     private FlyingPathNavigation cachedFlyingNavigation;
     protected static final float RANDOM_FLIGHT_TOGGLE_CHANCE = 0.002f;
     protected static final float COMBAT_FLIGHT_CHANCE = 0.01f;
+
+
+    // =============================
+    // 🧱 BLOCK DESTRUCTION
+    // =============================
+    protected static final int BLOCK_DESTROY_RADIUS = 2; // Raio em blocos
+    protected static final int BLOCK_DESTROY_COOLDOWN = 5; // Ticks entre destruições
+    private int blockDestroyTicker = 0;
 
     protected AbstractFlightWarrior(EntityType<? extends Monster> type, Level level, String tag, AttributeConfig attributes, EntityConfig config) {
         super(type, level, tag, attributes, config);
@@ -97,6 +113,7 @@ public class AbstractFlightWarrior extends NoctisEntity implements IFlightCapabl
         return RANDOM_FLIGHT_TOGGLE_CHANCE;
     }
 
+
     // =============================
     // 🎯 GOALS
     // =============================
@@ -122,9 +139,12 @@ public class AbstractFlightWarrior extends NoctisEntity implements IFlightCapabl
         var controller = event.getController();
         FlightState state = getFlightState();
 
+        // ✅ Checa movimento pela velocidade real
+        boolean isActuallyMoving = this.getDeltaMovement().lengthSqr() > 0.01;
+
         switch (state) {
             case LEVITATE -> {
-                if (event.isMoving()) {
+                if (isActuallyMoving) {
                     controller.setAnimation(LEVITATE_FLIGHT);
                 } else {
                     controller.setAnimation(LEVITATE_IDLE);
@@ -172,14 +192,120 @@ public class AbstractFlightWarrior extends NoctisEntity implements IFlightCapabl
     }
 
     // =============================
+    // 🧱 DESTRUIÇÃO DE BLOCOS
+    // =============================
+
+    private void tickBlockDestruction() {
+        // Só destrói blocos em HUNT_FLIGHT
+        if (getFlightState() != FlightState.HUNT_FLIGHT) {
+            blockDestroyTicker = 0;
+            return;
+        }
+
+        blockDestroyTicker++;
+
+        // Só tenta destruir a cada X ticks
+        if (blockDestroyTicker < BLOCK_DESTROY_COOLDOWN) {
+            return;
+        }
+
+        blockDestroyTicker = 0;
+
+        // ✅ Destrói blocos em um raio ao redor da entidade
+        BlockPos entityPos = this.blockPosition();
+        int radius = getBlockDestroyRadius();
+
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    BlockPos targetPos = entityPos.offset(x, y, z);
+                    destroyBlockIfValid(targetPos);
+                }
+            }
+        }
+    }
+
+    private void destroyBlockIfValid(BlockPos pos) {
+        BlockState block = this.level().getBlockState(pos);
+
+        // ✅ Não destrói blocos "indestrutíveis"
+        if (isBlockIndestructible(block)) {
+            return;
+        }
+
+        // ✅ Só destrói se for um bloco sólido
+        if (!block.isAir() && block.isSolidRender(this.level(), pos)) {
+            this.level().destroyBlock(pos, true); // true = droppa items
+        }
+    }
+
+    protected boolean isBlockIndestructible(BlockState block) {
+        // ✅ Override em subclasses para customizar
+        // Por padrão, não destrói bedrock, obsidian, etc.
+        return block.getDestroySpeed(this.level(), BlockPos.ZERO) < 0; // -1 = indestrutível
+    }
+
+    protected int getBlockDestroyRadius() {
+        return BLOCK_DESTROY_RADIUS;
+    }
+
+    protected int getBlockDestroyCooldown() {
+        return BLOCK_DESTROY_COOLDOWN;
+    }
+
+    // =============================
     // 🔄 TICK
     // =============================
 
     @Override
     public void tick() {
-        super.tick();
+        // ✅ Flight component atualiza PRIMEIRO
+        if (!level().isClientSide) {
+            flightComponent.tick(this);
 
-        // ✅ Delegar lógica de voo ao componente
-        flightComponent.tick(this);
+            // ✅ Detecta se caiu no chão
+            if (getFlightState() != FlightState.GROUNDED && this.onGround()) {
+                this.forceSetFlightState(FlightState.GROUNDED);
+                this.setNoGravity(false);
+            }
+
+            // ✅ Destrói blocos em HUNT_FLIGHT
+            tickBlockDestruction();
+
+        }
+
+        super.tick();
+    }
+
+    @Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
+                                        MobSpawnType spawnType, SpawnGroupData spawnGroupData,
+                                        CompoundTag dataTag) {
+        var result = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, dataTag);
+
+        // ✅ Detecta se foi summoned no ar ou no chão
+        determineInitialFlightState();
+
+        return result;
+    }
+
+    protected void determineInitialFlightState() {
+        // Checa se há bloco sólido em até 3 blocos abaixo
+        BlockPos checkPos = this.blockPosition();
+
+        for (int i = 1; i <= 3; i++) {
+            checkPos = checkPos.below();
+            BlockState block = this.level().getBlockState(checkPos);
+
+            if (!block.getCollisionShape(this.level(), checkPos).isEmpty()) {
+                this.forceSetFlightState(FlightState.GROUNDED);
+                this.setNoGravity(false);
+                return;
+            }
+        }
+
+        // Não encontrou chão → voa
+        this.forceSetFlightState(FlightState.LEVITATE);
+        this.setNoGravity(true);
     }
 }

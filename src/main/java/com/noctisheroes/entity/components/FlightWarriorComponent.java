@@ -4,6 +4,10 @@ import com.noctisheroes.common.ability.helpers.AbilityParticleEffects;
 import com.noctisheroes.entity.NoctisEntity;
 import com.noctisheroes.entity.ai.states.FlightState;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.phys.Vec3;
@@ -14,6 +18,11 @@ public class FlightWarriorComponent {
     // =============================
     // 📦 CONFIGURAÇÃO (STATIC)
     // =============================
+
+    private int huntBoostCooldown = 0;
+
+    protected static final int BOOST_INTERVAL = 40; // 2s
+    protected static final double BOOST_FORCE = 1.8;
 
     private static final int MIN_TICKS_BETWEEN_FLIGHT_CHANGE = 10;
     private static final int SONIC_BOOM_INTERVAL = 2;
@@ -58,6 +67,8 @@ public class FlightWarriorComponent {
 
         // Atualizar efeitos visuais
         updateParticleEffects(noctisEntity);
+
+        handleHuntBoost(noctisEntity);
     }
 
     // =============================
@@ -233,5 +244,59 @@ public class FlightWarriorComponent {
         this.stateTimer = 0;
         this.ticksSinceFlightChange = 0;
         this.sonicBoomTicks = 0;
+    }
+
+    private void handleHuntBoost(NoctisEntity entity) {
+        if (this.entity.getFlightState() != FlightState.HUNT_FLIGHT) return;
+
+        sonicBoomTicks++;
+
+        if (sonicBoomTicks < BOOST_INTERVAL) return;
+
+        sonicBoomTicks = 0;
+
+        Vec3 direction;
+
+        if (entity.getTarget() != null) {
+            direction = entity.getTarget()
+                    .position()
+                    .subtract(entity.position())
+                    .normalize();
+        } else {
+            direction = entity.getLookAngle();
+        }
+
+        entity.setDeltaMovement(
+                entity.getDeltaMovement().add(
+                        direction.x * BOOST_FORCE,
+                        direction.y * 0.3,
+                        direction.z * BOOST_FORCE
+                )
+        );
+
+        spawnBoostEffect(entity);
+    }
+
+    private void spawnBoostEffect(NoctisEntity entity) {
+        if (!(entity.level() instanceof ServerLevel server)) return;
+
+        server.sendParticles(
+                ParticleTypes.EXPLOSION_EMITTER,
+                entity.getX(),
+                entity.getY(0.5),
+                entity.getZ(),
+                1,
+                0, 0, 0,
+                0
+        );
+
+        entity.level().playSound(
+                null,
+                entity.blockPosition(),
+                SoundEvents.GENERIC_EXPLODE,
+                SoundSource.HOSTILE,
+                0.6f,
+                1.2f
+        );
     }
 }

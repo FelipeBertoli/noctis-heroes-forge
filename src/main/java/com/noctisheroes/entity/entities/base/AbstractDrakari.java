@@ -7,14 +7,17 @@ import com.noctisheroes.common.combat.damage.DamageConfig;
 import com.noctisheroes.common.combat.rage.IRageUser;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.combat.damage.DamageTags;
-import com.noctisheroes.common.effect.EffectConfig;
-import com.noctisheroes.common.effect.EffectType;
+import com.noctisheroes.entity.ai.goals.DynamicTargetGoal;
 import com.noctisheroes.entity.components.RageComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
+import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 public abstract class AbstractDrakari extends AbstractFlightWarrior implements IRageUser {
@@ -40,7 +43,7 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
                 .ignoreFallDamage()
                 .resist(DamageTags.EXPLOSION, attributes.explosionResistance)
                 .resist(DamageTags.PROJECTILE, attributes.explosionWeakness)
-                .weakTo(DamageTags.SONIC, 0.75f)
+                .weakTo(DamageTags.FIRE, 0.75f)
                 .immuneTo("drakari");
 
 //        this.getEffectManager().addEffect(
@@ -107,7 +110,8 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
         float r = rage.getPercent();
 
         // escala progressiva
-        double physicBonus = 1.0 + r * 1.5; // até +150%
+        double physicBonus = 1.0 + r * 1.0;// até +150%
+        double resistanceBonus = 1.0 + r * 1.5;
         double speedBonus = 1.0 + r * 0.5;
 
         AttributeConfig base = this.getAttributeConfig();
@@ -122,7 +126,10 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
                 .setBaseValue(base.flyingSpeed * speedBonus);
 
         this.getAttribute(Attributes.ARMOR)
-                .setBaseValue(base.armor * physicBonus);
+                .setBaseValue(base.armor * resistanceBonus);
+
+        this.getAttribute(Attributes.ARMOR_TOUGHNESS)
+                .setBaseValue(base.armorToughness * resistanceBonus);
 
         this.getAttribute(Attributes.ATTACK_KNOCKBACK)
                 .setBaseValue(base.attackKnockback * physicBonus);
@@ -147,6 +154,14 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
 
         this.heal(healAmount);
 
+    }
+
+    @Override
+    protected void registerTargetGoals() {
+        targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        targetSelector.addGoal(2, new DynamicTargetGoal<>(this, Player.class, 2.0, true, 20));
+        targetSelector.addGoal(3, new DynamicTargetGoal<>(this, AbstractVillager.class, true));
+        targetSelector.addGoal(4, new DynamicTargetGoal<>(this, IronGolem.class, true));
     }
 
     // =============================
