@@ -2,45 +2,46 @@ package com.noctisheroes.common.ability.abilities;
 
 import com.noctisheroes.common.ability.helpers.AbilityHelper;
 import com.noctisheroes.common.ability.helpers.ImpactDetector;
-import com.noctisheroes.common.ability.helpers.iNoctisAbility;
+import com.noctisheroes.common.ability.helpers.TimedAbility;
 import com.noctisheroes.common.particle.AbilityParticleEffects;
 import com.noctisheroes.entity.NoctisEntity;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-
 import software.bernie.geckolib.core.animation.RawAnimation;
 
 /**
- * Super Punch com destruição contínua + impacto final.
+ * Super Punch com TimedAbility.
  */
-public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
+public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
 
     // =============================
     // 📊 ESTADO
     // =============================
 
-    private int ticks;
     private LivingEntity hitTarget;
     private boolean impactTriggered;
     private Vec3 lastTargetPos;
+    private Vec3 punchDirection;
 
     // =============================
     // ⚙️ CONFIG
     // =============================
 
     private static final int HIT_FRAME = 4;
-    private static final int ABILITY_DURATION = 25;
 
-    private static final double PUNCH_SPEED = 3.5;
+    private static final double PUNCH_SPEED = 2.2;
     private static final double PUNCH_VERTICAL = 0.9;
 
     private static final float DAMAGE_MULTIPLIER = 1.2f;
+
     private static final float FINAL_EXPLOSION_RADIUS = 2.5f;
-    private static final float DESTRUCTION_RADIUS = 3.0f;
+
+    private static final float DESTRUCTION_RADIUS = 4.0f;
 
     // =============================
-    // 🎯 ABILITY
+    // 🎯 METADADOS
     // =============================
 
     @Override
@@ -60,28 +61,57 @@ public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
 
     @Override
     public boolean canUse(NoctisEntity entity) {
+
         var target = entity.getTarget();
-        if (target == null) return false;
+
+        if (target == null) {
+            return false;
+        }
 
         double dist = entity.distanceTo(target);
-        return dist > 2 && dist < 8 && entity.getRandom().nextFloat() < 0.04f;
+
+        return dist > 2
+                && dist < 8
+                && entity.getRandom().nextFloat() < 0.04f;
     }
 
     @Override
-    public void start(NoctisEntity entity) {
-        ticks = 0;
+    public RawAnimation getAnimation() {
+        return NoctisEntity.RIGHT_ATTACK_ANIM;
+    }
+
+    @Override
+    public boolean overridesAttackAnimation() {
+        return true;
+    }
+
+    // =============================
+    // 🚀 START
+    // =============================
+
+    @Override
+    protected void onStart(NoctisEntity entity) {
+
         hitTarget = null;
+
         impactTriggered = false;
+
         lastTargetPos = null;
+
+        punchDirection = null;
 
         entity.setNoGravity(true);
     }
 
+    // =============================
+    // 🔄 TICK
+    // =============================
+
     @Override
-    public void tick(NoctisEntity entity) {
-        ticks++;
+    protected void onTick(NoctisEntity entity, int ticks) {
 
         Level level = entity.level();
+
         LivingEntity target = entity.getTarget();
 
         if (target == null) {
@@ -92,17 +122,23 @@ public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
         // =============================
         // 🥊 FRAME DO SOCO
         // =============================
+
         if (ticks == HIT_FRAME) {
+
             performPunch(entity, target);
         }
 
         // =============================
-        // 💥 DESTRUIÇÃO CONTÍNUA + IMPACTO
+        // 💥 MOVIMENTO FORÇADO
         // =============================
+
         if (hitTarget != null) {
 
-            // 🔥 destruição ao longo do caminho
+            forceTargetMovement(hitTarget);
+
+            // 🔥 destruição do caminho
             if (lastTargetPos != null) {
+
                 AbilityHelper.destroyPath(
                         level,
                         lastTargetPos,
@@ -111,54 +147,151 @@ public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
                 );
             }
 
+            // 🔥 destrói na frente do alvo
+            Vec3 ahead = hitTarget.position()
+                    .add(punchDirection.scale(1.5));
+
+            AbilityHelper.destroySphere(
+                    level,
+                    ahead,
+                    3
+            );
+
             lastTargetPos = hitTarget.position();
 
-            // 💥 impacto final
-            if (!impactTriggered && hasHitSurface(level, hitTarget)) {
-                triggerFinalImpact(entity, hitTarget, level);
+            // =============================
+            // 💥 IMPACTO FINAL
+            // =============================
+
+            if (!impactTriggered
+                    && hasHitSurface(level, hitTarget)) {
+
+                triggerFinalImpact(
+                        entity,
+                        hitTarget,
+                        level
+                );
             }
         }
+    }
 
-        if (ticks >= ABILITY_DURATION) {
-            stop(entity);
+    // =============================
+    // 🏁 STOP
+    // =============================
+
+    @Override
+    protected void onStop(NoctisEntity entity) {
+
+        entity.setNoGravity(false);
+
+        if (hitTarget != null) {
+
+            hitTarget.fallDistance = 0;
         }
+    }
+
+    // =============================
+    // ⏳ DURAÇÃO
+    // =============================
+
+    @Override
+    protected int getDuration() {
+        return 25;
     }
 
     // =============================
     // 🥊 EXECUÇÃO DO SOCO
     // =============================
 
-    protected void performPunch(NoctisEntity entity, LivingEntity target) {
+    protected void performPunch(
+            NoctisEntity entity,
+            LivingEntity target
+    ) {
 
         float damage = getDamage(entity);
 
-        target.hurt(entity.damageSources().mobAttack(entity), damage);
-
-        hitTarget = target;
-        lastTargetPos = target.position();
-
-        Vec3 direction = target.position().subtract(entity.position()).normalize();
-
-        AbilityHelper.applyKnockback(
-                target,
-                direction,
-                PUNCH_SPEED,
-                PUNCH_VERTICAL
+        target.hurt(
+                entity.damageSources().mobAttack(entity),
+                damage
         );
 
-        AbilityParticleEffects.spawnCriticalHitEffect(entity.level(), target.position());
+        hitTarget = target;
+
+        lastTargetPos = target.position();
+
+        punchDirection =
+                target.position()
+                        .subtract(entity.position())
+                        .normalize();
+
+        // 🔥 impulso inicial
+        target.setDeltaMovement(
+                punchDirection.x * PUNCH_SPEED,
+                PUNCH_VERTICAL,
+                punchDirection.z * PUNCH_SPEED
+        );
+
+        target.hurtMarked = true;
+        target.hasImpulse = true;
+
+        entity.level().players().forEach(player -> {
+
+            player.displayClientMessage(
+                    Component.literal("INICIANDO SUPER SOCO"),
+                    false
+            );
+        });
+
+        AbilityParticleEffects.spawnCriticalHitEffect(
+                entity.level(),
+                target.position()
+        );
+    }
+
+    // =============================
+    // 🚀 MOVIMENTO FORÇADO
+    // =============================
+
+    private void forceTargetMovement(
+            LivingEntity target
+    ) {
+
+        if (punchDirection == null) {
+            return;
+        }
+
+        target.setDeltaMovement(
+                punchDirection.x * PUNCH_SPEED,
+                PUNCH_VERTICAL,
+                punchDirection.z * PUNCH_SPEED
+        );
+
+        target.hurtMarked = true;
+
+        target.hasImpulse = true;
+
+        target.fallDistance = 0;
     }
 
     // =============================
     // 💥 IMPACTO FINAL
     // =============================
 
-    protected void triggerFinalImpact(NoctisEntity entity, LivingEntity target, Level level) {
+    protected void triggerFinalImpact(
+            NoctisEntity entity,
+            LivingEntity target,
+            Level level
+    ) {
+
         impactTriggered = true;
 
         Vec3 pos = target.position();
 
-        AbilityParticleEffects.spawnImpactEffect(level, pos, 1.5);
+        AbilityParticleEffects.spawnImpactEffect(
+                level,
+                pos,
+                1.5
+        );
 
         AbilityHelper.explode(
                 level,
@@ -172,7 +305,11 @@ public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
     // 🧠 DETECÇÃO DE SUPERFÍCIE
     // =============================
 
-    private boolean hasHitSurface(Level level, LivingEntity entity) {
+    private boolean hasHitSurface(
+            Level level,
+            LivingEntity entity
+    ) {
+
         return ImpactDetector.hasNearbyCollision(
                 level,
                 entity.position(),
@@ -181,30 +318,16 @@ public class SuperPunchAbility implements iNoctisAbility<NoctisEntity> {
     }
 
     // =============================
-    // 🏁 FINALIZAÇÃO
+    // ⚔️ DANO
     // =============================
 
-    @Override
-    public void stop(NoctisEntity entity) {
-        entity.setNoGravity(false);
-    }
+    protected float getDamage(
+            NoctisEntity entity
+    ) {
 
-    @Override
-    public boolean isFinished(NoctisEntity entity) {
-        return ticks > ABILITY_DURATION;
-    }
-
-    @Override
-    public RawAnimation getAnimation() {
-        return NoctisEntity.RIGHT_ATTACK_ANIM;
-    }
-
-    @Override
-    public boolean overridesAttackAnimation() {
-        return true;
-    }
-
-    protected float getDamage(NoctisEntity entity) {
-        return AbilityHelper.scaledAttack(entity, DAMAGE_MULTIPLIER);
+        return AbilityHelper.scaledAttack(
+                entity,
+                DAMAGE_MULTIPLIER
+        );
     }
 }

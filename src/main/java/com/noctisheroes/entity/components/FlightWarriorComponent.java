@@ -19,12 +19,10 @@ public class FlightWarriorComponent {
     // 📦 CONFIGURAÇÃO (STATIC)
     // =============================
 
-    private int huntBoostCooldown = 0;
 
-    protected static final int BOOST_INTERVAL = 40; // 2s
+    protected static final int BOOST_INTERVAL = 60; // 2s
     protected static final double BOOST_FORCE = 1.8;
 
-    private static final int MIN_TICKS_BETWEEN_FLIGHT_CHANGE = 10;
     private static final int SONIC_BOOM_INTERVAL = 2;
 
     // =============================
@@ -195,10 +193,10 @@ public class FlightWarriorComponent {
 
         // Calcular velocidade baseado no estado
         double speed = switch (state) {
-            case HUNT_FLIGHT -> 0.08;
+            case HUNT_FLIGHT -> 0.1;
             case FLIGHT_START -> 0.04;
             case FLIGHT_STOP -> 0.02;
-            default -> 0.04;
+            default -> 0.06;
         };
 
         // Aplicar movimento relativo
