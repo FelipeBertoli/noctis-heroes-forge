@@ -5,6 +5,7 @@ import com.noctisheroes.common.ability.abilities.SuperPunchAbility;
 import com.noctisheroes.common.attribute.AttributeConfig;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.combat.damage.DamageTags;
+import com.noctisheroes.entity.ai.flight.AbstractFlightWarrior;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;

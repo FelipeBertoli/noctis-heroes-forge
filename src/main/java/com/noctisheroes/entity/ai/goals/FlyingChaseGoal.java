@@ -1,73 +1,178 @@
 package com.noctisheroes.entity.ai.goals;
 
-import com.noctisheroes.entity.ai.states.FlightState;
+import com.noctisheroes.entity.ai.flight.FlightState;
+import com.noctisheroes.entity.ai.flight.FlightWarriorComponent;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 
 public class FlyingChaseGoal extends Goal {
 
+    private final Mob mob;
     private final IFlightCapable flightMob;
-    private final Mob mob; // 🔥 acesso ao mundo real (Minecraft)
+    private final FlightWarriorComponent flightComponent;
     private LivingEntity target;
 
-    public FlyingChaseGoal(Mob mob, IFlightCapable flightMob) {
+    // =========================================
+    // 🏗️ CONSTRUTOR
+    // =========================================
+
+    public FlyingChaseGoal(
+            Mob mob,
+            IFlightCapable flightMob,
+            FlightWarriorComponent flightComponent
+    ) {
+
         this.mob = mob;
         this.flightMob = flightMob;
-        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        this.flightComponent = flightComponent;
+
+        this.setFlags(
+                EnumSet.of(
+                        Flag.MOVE,
+                        Flag.LOOK
+                )
+        );
     }
+
+    // =========================================
+    // ✅ LÓGICA DE ATIVAÇÃO
+    // =========================================
 
     @Override
     public boolean canUse() {
+
         target = mob.getTarget();
-        return target != null && flightMob.getFlightState() == FlightState.HUNT_FLIGHT;
+
+        if (target == null || !target.isAlive()) {
+            return false;
+        }
+
+        // =====================================
+        // VERIFICA PROXIMIDADE E VISIBILIDADE
+        // =====================================
+
+        double distance = mob.distanceTo(target);
+
+        return distance <= 30
+                && mob.hasLineOfSight(target);
     }
+
+    // =========================================
+    // ⏱️ CONTINUAR USANDO
+    // =========================================
 
     @Override
     public boolean canContinueToUse() {
-        return target != null && target.isAlive()
-                && flightMob.getFlightState() == FlightState.HUNT_FLIGHT;
+
+        if (target == null || !target.isAlive()) {
+            return false;
+        }
+
+        // Continua enquanto o alvo estiver vivo
+        return mob.hasLineOfSight(target);
     }
 
-    @Override
-    public void stop() {
-        this.target = null;
-    }
+    // =========================================
+    // 🔄 TICK PRINCIPAL
+    // =========================================
 
     @Override
     public void tick() {
-        if (target == null) return;
 
+        FlightState currentState = flightMob.getFlightState();
+
+        // =====================================
+        // 1️⃣ SE ESTÁ NO CHÃO
+        // =====================================
+
+        if (currentState == FlightState.GROUNDED) {
+
+            // Persegue no chão usando navegação padrão
+            mob.getNavigation().moveTo(target, 1.0);
+
+            // Se alvo está longe, começa a voar
+            if (mob.distanceTo(target) > 5) {
+                // O FlightWarriorComponent vai mudar o estado automaticamente
+            }
+        }
+
+        // =====================================
+        // 2️⃣ SE ESTÁ VOANDO (qualquer estado)
+        // =====================================
+
+        else {
+
+            // Para navegação no chão
+            mob.getNavigation().stop();
+
+            // O FlightWarriorComponent controla a física do voo
+            // Apenas mantemos o alvo atualizado
+            updateTargetRotation();
+        }
+    }
+
+    // =========================================
+    // 🎯 ROTAÇÃO PARA ALVO
+    // =========================================
+
+    private void updateTargetRotation() {
+
+        if (target == null) {
+            return;
+        }
+
+        // Calcula direção para o alvo
         double dx = target.getX() - mob.getX();
-        double dy = (target.getY() + target.getBbHeight() * 0.5) - mob.getY();
+        double dy = target.getY() - mob.getY();
         double dz = target.getZ() - mob.getZ();
 
-        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (distance <= 0.1) return;
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
 
-        dx /= distance;
-        dy /= distance;
-        dz /= distance;
+        float yaw = (float) (
+                Math.toDegrees(
+                        Math.atan2(dz, dx)
+                ) - 90F
+        );
 
-        double speed = 0.08;
+        float pitch = (float) (
+                -Math.toDegrees(
+                        Math.atan2(dy, horizontal)
+                )
+        );
 
-        if (distance < 4.0) speed *= 0.5;
-        if (distance > 10.0) speed *= 1.4; // 🔥 sensação de caça
+        // Aplica rotação suavemente
+        mob.setYRot(yaw);
+        mob.yBodyRot = yaw;
+        mob.yHeadRot = yaw;
 
-        Vec3 currentVelocity = mob.getDeltaMovement();
-        Vec3 desiredVelocity = new Vec3(dx * speed, dy * speed, dz * speed);
+        if (flightMob.getFlightState() != FlightState.LEVITATE) {
+            mob.setXRot(pitch);
+        }
+    }
 
-        Vec3 newVelocity = currentVelocity.lerp(desiredVelocity, 0.15);
-        mob.setDeltaMovement(newVelocity);
+    // =========================================
+    // 🛑 PARAR
+    // =========================================
 
-        double pitch = -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
-        double yaw = Math.toDegrees(Math.atan2(dz, dx)) - 90;
+    @Override
+    public void stop() {
 
-        mob.setXRot((float) pitch);
-        mob.setYRot((float) yaw);
+        target = null;
+        mob.getNavigation().stop();
+
+        // O FlightWarriorComponent vai transicionar
+        // para FLIGHT_STOP e depois LEVITATE automaticamente
+    }
+
+    // =========================================
+    // 📊 GETTERS
+    // =========================================
+
+    public LivingEntity getTarget() {
+        return target;
     }
 }

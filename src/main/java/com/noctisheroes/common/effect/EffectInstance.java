@@ -57,6 +57,13 @@ public class EffectInstance {
             case STUN -> {
                 entity.setDeltaMovement(0, 0, 0);
             }
+
+            case CONFUSION -> {
+                entity.setYRot(
+                        entity.getYRot()
+                                + (entity.getRandom().nextFloat() - 0.5f) * 25f
+                );
+            }
         }
     }
 }

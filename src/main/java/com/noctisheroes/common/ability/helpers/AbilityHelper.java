@@ -13,9 +13,8 @@ import net.minecraft.world.phys.Vec3;
 public class AbilityHelper {
 
     public static void dashToTarget(NoctisEntity entity, LivingEntity target, double speed) {
-        Vec3 direction = target.position()
-                .subtract(entity.position())
-                .normalize();
+
+        Vec3 direction = target.position().subtract(entity.position()).normalize();
 
         entity.setDeltaMovement(direction.scale(speed));
     }
@@ -94,7 +93,7 @@ public class AbilityHelper {
                 pos.y,
                 pos.z,
                 radius,
-                Level.ExplosionInteraction.MOB
+                Level.ExplosionInteraction.BLOCK
         );
     }
 }

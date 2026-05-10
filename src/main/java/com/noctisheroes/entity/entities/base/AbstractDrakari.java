@@ -7,6 +7,7 @@ import com.noctisheroes.common.combat.damage.DamageConfig;
 import com.noctisheroes.common.combat.rage.IRageUser;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.combat.damage.DamageTags;
+import com.noctisheroes.entity.ai.flight.AbstractFlightWarrior;
 import com.noctisheroes.entity.ai.goals.DynamicTargetGoal;
 import com.noctisheroes.entity.components.RageComponent;
 import net.minecraft.server.level.ServerLevel;
@@ -110,9 +111,9 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
         float r = rage.getPercent();
 
         // escala progressiva
-        double physicBonus = 1.0 + r * 1.0;// até +150%
-        double resistanceBonus = 1.0 + r * 1.5;
-        double speedBonus = 1.0 + r * 0.5;
+        double physicBonus = 0.5 + r * 1.2;// até +150%
+        double resistanceBonus = 0.5 + r * 1.5;
+        double speedBonus = 0.5 + r * 1.2;
 
         AttributeConfig base = this.getAttributeConfig();
 
@@ -148,7 +149,7 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
         if (this.tickCount % interval != 0) return;
 
         // quantidade de cura
-        float healAmount = 0.5f + (ragePercent * 2.5f);
+        float healAmount = 0.3f + (ragePercent * 1.2f);
         // 0 rage → 0.5
         // full rage → 3.0
 

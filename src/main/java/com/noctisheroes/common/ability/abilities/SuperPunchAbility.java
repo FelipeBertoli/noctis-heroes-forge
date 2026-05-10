@@ -6,13 +6,24 @@ import com.noctisheroes.common.ability.helpers.TimedAbility;
 import com.noctisheroes.common.particle.AbilityParticleEffects;
 import com.noctisheroes.entity.NoctisEntity;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import software.bernie.geckolib.core.animation.RawAnimation;
 
 /**
- * Super Punch com TimedAbility.
+ * Super Punch com direção dinâmica.
+ *
+ * O soco adapta automaticamente:
+ *
+ * Alvo acima:
+ * ↗↗↗
+ *
+ * Alvo abaixo:
+ * ↘↘↘
+ *
+ * Alvo alinhado:
+ * →→→
  */
 public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
 
@@ -21,8 +32,11 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
     // =============================
 
     private LivingEntity hitTarget;
+
     private boolean impactTriggered;
+
     private Vec3 lastTargetPos;
+
     private Vec3 punchDirection;
 
     // =============================
@@ -31,14 +45,30 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
 
     private static final int HIT_FRAME = 4;
 
-    private static final double PUNCH_SPEED = 2.2;
-    private static final double PUNCH_VERTICAL = 0.9;
+    /**
+     * Força total do impulso.
+     */
+    private static final double PUNCH_FORCE = 2.2;
+
+    /**
+     * Quanto a direção vertical influencia.
+     *
+     * 0.5 = mais horizontal
+     * 1.0 = equilibrado
+     * 2.0 = muito vertical
+     */
+    private static final double VERTICAL_INFLUENCE = 1.0;
+
+    /**
+     * Limite vertical para evitar ângulos absurdos.
+     */
+    private static final double MAX_VERTICAL = 0.7;
 
     private static final float DAMAGE_MULTIPLIER = 1.2f;
 
     private static final float FINAL_EXPLOSION_RADIUS = 2.5f;
 
-    private static final float DESTRUCTION_RADIUS = 4.0f;
+    private static final float DESTRUCTION_RADIUS = 3.0f;
 
     // =============================
     // 🎯 METADADOS
@@ -62,22 +92,19 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
     @Override
     public boolean canUse(NoctisEntity entity) {
 
-        var target = entity.getTarget();
+        LivingEntity target =
+                entity.getTarget();
 
         if (target == null) {
             return false;
         }
 
-        double dist = entity.distanceTo(target);
+        double dist =
+                entity.distanceTo(target);
 
         return dist > 2
                 && dist < 8
                 && entity.getRandom().nextFloat() < 0.04f;
-    }
-
-    @Override
-    public RawAnimation getAnimation() {
-        return NoctisEntity.RIGHT_ATTACK_ANIM;
     }
 
     @Override
@@ -101,6 +128,13 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
         punchDirection = null;
 
         entity.setNoGravity(true);
+
+        entity.triggerAnim(
+                "actions",
+                entity.getRandom().nextBoolean()
+                        ? "right_attack"
+                        : "left_attack"
+        );
     }
 
     // =============================
@@ -108,14 +142,21 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
     // =============================
 
     @Override
-    protected void onTick(NoctisEntity entity, int ticks) {
+    protected void onTick(
+            NoctisEntity entity,
+            int ticks
+    ) {
 
-        Level level = entity.level();
+        Level level =
+                entity.level();
 
-        LivingEntity target = entity.getTarget();
+        LivingEntity target =
+                entity.getTarget();
 
         if (target == null) {
+
             stop(entity);
+
             return;
         }
 
@@ -125,7 +166,10 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
 
         if (ticks == HIT_FRAME) {
 
-            performPunch(entity, target);
+            performPunch(
+                    entity,
+                    target
+            );
         }
 
         // =============================
@@ -137,6 +181,7 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
             forceTargetMovement(hitTarget);
 
             // 🔥 destruição do caminho
+
             if (lastTargetPos != null) {
 
                 AbilityHelper.destroyPath(
@@ -148,8 +193,12 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
             }
 
             // 🔥 destrói na frente do alvo
-            Vec3 ahead = hitTarget.position()
-                    .add(punchDirection.scale(1.5));
+
+            Vec3 ahead =
+                    hitTarget.position()
+                            .add(
+                                    punchDirection.scale(1.5)
+                            );
 
             AbilityHelper.destroySphere(
                     level,
@@ -157,14 +206,20 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
                     3
             );
 
-            lastTargetPos = hitTarget.position();
+            lastTargetPos =
+                    hitTarget.position();
 
             // =============================
             // 💥 IMPACTO FINAL
             // =============================
 
-            if (!impactTriggered
-                    && hasHitSurface(level, hitTarget)) {
+            if (
+                    !impactTriggered
+                            && hasHitSurface(
+                            level,
+                            hitTarget
+                    )
+            ) {
 
                 triggerFinalImpact(
                         entity,
@@ -180,7 +235,9 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
     // =============================
 
     @Override
-    protected void onStop(NoctisEntity entity) {
+    protected void onStop(
+            NoctisEntity entity
+    ) {
 
         entity.setNoGravity(false);
 
@@ -208,39 +265,46 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
             LivingEntity target
     ) {
 
-        float damage = getDamage(entity);
+        float damage =
+                getDamage(entity);
 
         target.hurt(
-                entity.damageSources().mobAttack(entity),
+                entity.damageSources()
+                        .mobAttack(entity),
                 damage
         );
 
         hitTarget = target;
 
-        lastTargetPos = target.position();
+        lastTargetPos =
+                target.position();
+
+        // =============================
+        // 🎯 DIREÇÃO DO SOCO
+        // =============================
 
         punchDirection =
                 target.position()
                         .subtract(entity.position())
                         .normalize();
 
-        // 🔥 impulso inicial
-        target.setDeltaMovement(
-                punchDirection.x * PUNCH_SPEED,
-                PUNCH_VERTICAL,
-                punchDirection.z * PUNCH_SPEED
-        );
+        // =============================
+        // 🚀 IMPULSO
+        // =============================
 
-        target.hurtMarked = true;
-        target.hasImpulse = true;
+        applyLaunchVelocity(target);
 
-        entity.level().players().forEach(player -> {
-
-            player.displayClientMessage(
-                    Component.literal("INICIANDO SUPER SOCO"),
-                    false
-            );
-        });
+//        entity.level()
+//                .players()
+//                .forEach(player -> {
+//
+//                    player.displayClientMessage(
+//                            Component.literal(
+//                                    "INICIANDO SUPER SOCO"
+//                            ),
+//                            false
+//                    );
+//                });
 
         AbilityParticleEffects.spawnCriticalHitEffect(
                 entity.level(),
@@ -260,17 +324,44 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
             return;
         }
 
-        target.setDeltaMovement(
-                punchDirection.x * PUNCH_SPEED,
-                PUNCH_VERTICAL,
-                punchDirection.z * PUNCH_SPEED
-        );
+        applyLaunchVelocity(target);
 
         target.hurtMarked = true;
 
         target.hasImpulse = true;
 
         target.fallDistance = 0;
+    }
+
+    // =============================
+    // 🚀 VELOCIDADE DINÂMICA
+    // =============================
+
+    private void applyLaunchVelocity(
+            LivingEntity target
+    ) {
+
+        double vertical =
+                Mth.clamp(
+                        punchDirection.y
+                                * VERTICAL_INFLUENCE,
+                        -MAX_VERTICAL,
+                        MAX_VERTICAL
+                );
+
+        Vec3 launch =
+                new Vec3(
+                        punchDirection.x,
+                        vertical,
+                        punchDirection.z
+                ).normalize()
+                        .scale(PUNCH_FORCE);
+
+        target.setDeltaMovement(launch);
+
+        target.hurtMarked = true;
+
+        target.hasImpulse = true;
     }
 
     // =============================
@@ -285,7 +376,8 @@ public class SuperPunchAbility extends TimedAbility<NoctisEntity> {
 
         impactTriggered = true;
 
-        Vec3 pos = target.position();
+        Vec3 pos =
+                target.position();
 
         AbilityParticleEffects.spawnImpactEffect(
                 level,

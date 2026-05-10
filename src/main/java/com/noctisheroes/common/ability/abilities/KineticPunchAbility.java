@@ -3,6 +3,7 @@ package com.noctisheroes.common.ability.abilities;
 import com.noctisheroes.common.ability.helpers.IResourceAbility;
 import com.noctisheroes.common.combat.rage.RageHelper;
 import com.noctisheroes.entity.NoctisEntity;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -10,8 +11,8 @@ import net.minecraft.world.phys.Vec3;
 public class KineticPunchAbility extends SuperPunchAbility
         implements IResourceAbility<NoctisEntity> {
 
-    private static final float MIN_RAGE = 20f;
-    private static final float COST = 15f;
+    private static final float MIN_RAGE = 15f;
+    private static final float COST = 10f;
 
     @Override
     public String getId() {

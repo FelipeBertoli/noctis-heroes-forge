@@ -1,4 +1,4 @@
-package com.noctisheroes.entity.ai.states;
+package com.noctisheroes.entity.ai.flight;
 
 public enum FlightState {
     GROUNDED,

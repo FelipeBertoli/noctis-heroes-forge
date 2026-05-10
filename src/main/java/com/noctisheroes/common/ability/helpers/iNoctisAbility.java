@@ -1,7 +1,7 @@
 package com.noctisheroes.common.ability.helpers;
 
 import com.noctisheroes.entity.NoctisEntity;
-import software.bernie.geckolib.core.animation.RawAnimation;
+import com.noctisheroes.entity.animation.AnimationKey;
 
 public interface iNoctisAbility<T extends NoctisEntity> {
 
@@ -18,8 +18,6 @@ public interface iNoctisAbility<T extends NoctisEntity> {
     void stop(T entity);
 
     boolean isFinished(T entity);
-
-    RawAnimation getAnimation(); // opcional
 
     boolean overridesAttackAnimation();
 

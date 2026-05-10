@@ -1,23 +1,25 @@
 package com.noctisheroes.entity;
 
 import com.noctisheroes.common.attribute.AttributeConfig;
-import com.noctisheroes.common.attribute.AttributeManager;
 import com.noctisheroes.common.combat.rage.RageConfig;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.ability.helpers.AbilityManager;
 import com.noctisheroes.common.combat.damage.DamageConfig;
 import com.noctisheroes.common.combat.damage.DamageManager;
 import com.noctisheroes.common.effect.EffectManager;
+import com.noctisheroes.entity.animation.AnimationResolver;
 import com.noctisheroes.entity.ai.states.VisualState;
+import com.noctisheroes.entity.animation.AnimationKey;
+import com.noctisheroes.entity.ai.flight.FlightHumanoidAnimations;
+import com.noctisheroes.entity.animation.IEntityAnimations;
 import com.noctisheroes.entity.components.RageComponent;
-import com.noctisheroes.entity.handlers.MeleeAttackHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -42,222 +44,564 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public abstract class NoctisEntity extends Monster implements GeoEntity {
+public abstract class NoctisEntity
+        extends Monster
+        implements GeoEntity {
 
-    private static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("animation.humanoid.walk");
-    private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.humanoid.idle");
+    // =========================================
+    // 🎞️ ANIMATION
+    // =========================================
 
-    public static final RawAnimation RIGHT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.humanoid.right_attack");
-    public static final RawAnimation LEFT_ATTACK_ANIM = RawAnimation.begin().thenPlay("animation.humanoid.left_attack");
+    private final AnimatableInstanceCache animationCache =
+            GeckoLibUtil.createInstanceCache(this);
 
-    private boolean wasDamaged = false;
+    private final IEntityAnimations animations;
+
+    private AnimationKey currentActionAnimation;
+
+    private int actionAnimationTicks = 0;
+
+    private boolean lastAttackRight = false;
+
+    // =========================================
+    // 📡 ENTITY DATA
+    // =========================================
+
     private static final EntityDataAccessor<Integer> SKIN_ID =
-            SynchedEntityData.defineId(NoctisEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(
+                    NoctisEntity.class,
+                    EntityDataSerializers.INT
+            );
 
-
-    private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
-    private final MeleeAttackHandler<NoctisEntity> attackHandler = new MeleeAttackHandler<>();
-
-    public String getEntityTag() {
-        return entityTag;
-    }
+    // =========================================
+    // ⚔️ SYSTEMS
+    // =========================================
 
     private final DamageManager damageManager;
-    private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
-    private final EffectManager effectManager = new EffectManager();
-    private final EntityConfig config;
-    private final AttributeConfig attributeConfig;
+
+    private final AbilityManager<NoctisEntity> abilityManager =
+            new AbilityManager<>();
+
+    private final EffectManager effectManager =
+            new EffectManager();
+
     private RageComponent rage;
+
+    // =========================================
+    // 📦 CONFIG
+    // =========================================
+
     private final String entityTag;
 
-    protected NoctisEntity(EntityType<? extends Monster> type, Level level, String tag, AttributeConfig attributes, EntityConfig config) {
+    private final EntityConfig config;
+
+    private final AttributeConfig attributeConfig;
+
+    // =========================================
+    // 🏗️ CONSTRUCTOR
+    // =========================================
+
+    protected NoctisEntity(
+            EntityType<? extends Monster> type,
+            Level level,
+            String tag,
+            AttributeConfig attributes,
+            EntityConfig config,
+            IEntityAnimations animations
+    ) {
+
         super(type, level);
+
         this.entityTag = tag;
+
         this.attributeConfig = attributes;
+
         this.config = config;
-        this.xpReward = config.xpReward;
+
+        this.animations = animations;
+
         this.damageManager = new DamageManager();
+
+        this.xpReward = config.xpReward;
     }
 
-    protected void initRage(RageConfig config) {
-        this.rage = new RageComponent(this);
+    // =========================================
+    // 😡 RAGE
+    // =========================================
+
+    protected void initRage(
+            RageConfig config
+    ) {
+
+        this.rage =
+                new RageComponent(this);
     }
 
     public RageComponent getRage() {
         return rage;
     }
 
+    // =========================================
+    // 📡 ENTITY DATA
+    // =========================================
+
     @Override
     protected void defineSynchedData() {
+
         super.defineSynchedData();
-        this.entityData.define(SKIN_ID, 0);
+
+        this.entityData.define(
+                SKIN_ID,
+                0
+        );
     }
 
     public final int getSkinId() {
-        return this.entityData.get(SKIN_ID);
+
+        return this.entityData.get(
+                SKIN_ID
+        );
     }
 
-    protected final void setSkinId(int id) {
+    protected final void setSkinId(
+            int id
+    ) {
+
         if (id >= 0 && id < getSkinCount()) {
-            this.entityData.set(SKIN_ID, id);
+
+            this.entityData.set(
+                    SKIN_ID,
+                    id
+            );
         }
     }
+
+    // =========================================
+    // 🎞️ GECKOLIB
+    // =========================================
 
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.animationCache;
+        return animationCache;
     }
 
     @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar register) {
-        register.add(new AnimationController<>(this, "movement", 8, this::movementController));
-        register.add(new AnimationController<>(this, "attack", 0, this::attackController));
+    public void registerControllers(
+            AnimatableManager.ControllerRegistrar registrar
+    ) {
+
+        registrar.add(
+
+                new AnimationController<>(
+                        this,
+                        "locomotion",
+                        2,
+                        this::locomotionController
+                )
+        );
+
+        registrar.add(
+
+                new AnimationController<>(
+                        this,
+                        "actions",
+                        state -> PlayState.STOP
+                )
+
+                        .triggerableAnim(
+                                "right_attack",
+                                animations.getAnimation(AnimationKey.RIGHT_ATTACK)
+                        )
+
+                        .triggerableAnim(
+                                "left_attack",
+                                animations.getAnimation(AnimationKey.LEFT_ATTACK)
+                        )
+
+                        .triggerableAnim(
+                                "block",
+                                animations.getAnimation(AnimationKey.BLOCK)
+                        )
+        );
     }
 
-    protected <E extends NoctisEntity> PlayState movementController(final AnimationState<E> event) {
-        if (event.isMoving() && this.getDeltaMovement().lengthSqr() > 0.002) {
-            return event.setAndContinue(WALK_ANIM);
+    private AnimationKey lastMovementAnimation;
+
+
+    protected <E extends NoctisEntity>
+    PlayState locomotionController(
+            AnimationState<E> event
+    ) {
+
+        AnimationKey key =
+                AnimationResolver.resolveMovement(this);
+
+        if (key == null) {
+            return PlayState.STOP;
         }
-        return event.setAndContinue(IDLE_ANIM);
-    }
 
-    protected PlayState attackController(AnimationState<?> event) {
-        var ability = this.getAbilityManager().getCurrentAbility();
-        if (ability != null && ability.getAnimation() != null) {
-            return event.setAndContinue(ability.getAnimation());
+        RawAnimation animation =
+                animations.getAnimation(key);
+
+        if (animation == null) {
+            return PlayState.STOP;
         }
-        return attackHandler.handle((AnimationState<NoctisEntity>) event, this);
+
+        if (lastMovementAnimation != key) {
+
+            event.getController().forceAnimationReset();
+
+            lastMovementAnimation = key;
+
+            if (animations instanceof FlightHumanoidAnimations flight) {
+
+                if (key == AnimationKey.HUNT_FLIGHT) {
+                    flight.resetHuntFlightVariation();
+                }
+            }
+        }
+
+        event.setAndContinue(animation);
+
+        return PlayState.CONTINUE;
     }
 
-    // =============================
-    // 🧠 OBJECTIVES DE IA
-    // =============================
+    // =========================================
+    // ⚔️ ACTION CONTROLLER
+    // =========================================
+
+    private AnimationKey queuedActionAnimation;
+
+    public void playActionAnimation(
+            AnimationKey key
+    ) {
+
+        this.queuedActionAnimation = key;
+    }
+
+    protected <E extends NoctisEntity>
+    PlayState actionController(
+            AnimationState<E> event
+    ) {
+
+        var controller = event.getController();
+
+        // =====================================
+        // NOVA ANIMAÇÃO
+        // =====================================
+
+        if (queuedActionAnimation != null) {
+
+            RawAnimation animation =
+                    animations.getAnimation(
+                            queuedActionAnimation
+                    );
+
+            queuedActionAnimation = null;
+
+            if (animation != null) {
+
+                controller.forceAnimationReset();
+
+                controller.setAnimation(animation);
+
+                return PlayState.CONTINUE;
+            }
+        }
+
+        // =====================================
+        // MANTER ANIMAÇÃO ATUAL
+        // =====================================
+
+        if (controller.getAnimationState()
+                != AnimationController.State.STOPPED) {
+
+            return PlayState.CONTINUE;
+        }
+
+        return PlayState.STOP;
+    }
+    // =========================================
+    // 🥊 BASIC ATTACKS
+    // =========================================
+
+    public AnimationKey nextAttackAnimation() {
+
+        lastAttackRight = !lastAttackRight;
+
+        return lastAttackRight
+                ? AnimationKey.RIGHT_ATTACK
+                : AnimationKey.LEFT_ATTACK;
+    }
+
+    @Override
+    public boolean doHurtTarget(Entity target) {
+
+        triggerAnim(
+                "actions",
+                lastAttackRight
+                        ? "right_attack"
+                        : "left_attack"
+        );
+
+        lastAttackRight = !lastAttackRight;
+
+        return super.doHurtTarget(target);
+    }
+
+    // =========================================
+    // 🧠 AI GOALS
+    // =========================================
 
     @Override
     protected void registerGoals() {
-        this.registerMovementGoals();
-        this.registerCombatGoals();
-        this.registerLookingGoals();
-        this.registerTargetGoals();
+
+        registerMovementGoals();
+
+        registerCombatGoals();
+
+        registerLookingGoals();
+
+        registerTargetGoals();
     }
 
     protected void registerMovementGoals() {
-        goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D));
+
+        goalSelector.addGoal(
+                2,
+                new WaterAvoidingRandomStrollGoal(
+                        this,
+                        1.0D
+                )
+        );
     }
 
     protected void registerCombatGoals() {
-        goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.3D, false));
+
+        goalSelector.addGoal(
+                1,
+                new MeleeAttackGoal(
+                        this,
+                        1.3D,
+                        false
+                )
+        );
     }
 
     protected void registerLookingGoals() {
-        goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
-        goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+
+        goalSelector.addGoal(
+                3,
+                new LookAtPlayerGoal(
+                        this,
+                        Player.class,
+                        8.0F
+                )
+        );
+
+        goalSelector.addGoal(
+                4,
+                new RandomLookAroundGoal(this)
+        );
     }
 
     protected void registerTargetGoals() {
-        targetSelector.addGoal(1, new HurtByTargetGoal(this));
-        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
-        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
-        targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, IronGolem.class, false));
+
+        targetSelector.addGoal(
+                1,
+                new HurtByTargetGoal(this)
+        );
+
+        targetSelector.addGoal(
+                2,
+                new NearestAttackableTargetGoal<>(
+                        this,
+                        Player.class,
+                        true
+                )
+        );
+
+        targetSelector.addGoal(
+                3,
+                new NearestAttackableTargetGoal<>(
+                        this,
+                        AbstractVillager.class,
+                        false
+                )
+        );
+
+        targetSelector.addGoal(
+                4,
+                new NearestAttackableTargetGoal<>(
+                        this,
+                        IronGolem.class,
+                        false
+                )
+        );
     }
+
+    // =========================================
+    // 🔄 TICK
+    // =========================================
 
     @Override
     public void tick() {
+
         super.tick();
 
+        // =====================================
+        // ⚔️ ACTION TIMER
+        // =====================================
+
+        if (actionAnimationTicks > 0) {
+
+            actionAnimationTicks--;
+
+            if (actionAnimationTicks <= 0) {
+
+                currentActionAnimation = null;
+            }
+        }
+
+        // =====================================
+        // 🧠 SYSTEMS
+        // =====================================
+
         if (!level().isClientSide) {
+
             abilityManager.tick(this);
+
             effectManager.tick(this);
-        }
 
-        boolean isDamaged = this.getVisualState() == VisualState.DAMAGED;
-
-        if (isDamaged && !wasDamaged) {
-            triggerDamageTransitionEffects();
-        }
-
-        if (!level().isClientSide && rage != null) {
-            rage.tick();
-        }
-
-        wasDamaged = isDamaged;
-    }
-
-    private void triggerDamageTransitionEffects() {
-        if (this.level().isClientSide) return;
-
-        this.level().playSound(
-                null,
-                this.blockPosition(),
-                net.minecraft.sounds.SoundEvents.GLASS_BREAK,
-                net.minecraft.sounds.SoundSource.HOSTILE,
-                1.0f,
-                0.6f
-        );
-
-        ((ServerLevel) this.level()).sendParticles(
-                net.minecraft.core.particles.ParticleTypes.DAMAGE_INDICATOR,
-                this.getX(), this.getY(0.5), this.getZ(),
-                8,
-                0.3, 0.3, 0.3,
-                0.1
-        );
-    }
-
-    @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
-                                        MobSpawnType spawnType, SpawnGroupData spawnGroupData,
-                                        CompoundTag dataTag) {
-        setSkinId(random.nextInt(getSkinCount()));
-        return super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, dataTag);
-    }
-
-    @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
-        tag.putInt("SkinId", this.getSkinId());
-    }
-
-    @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        if (tag.contains("SkinId")) {
-            this.setSkinId(tag.getInt("SkinId"));
+            if (rage != null) {
+                rage.tick();
+            }
         }
     }
 
-    @Override
-    public boolean hurt(DamageSource source, float amount) {
+    // =========================================
+    // 💥 DAMAGE
+    // =========================================
 
-        DamageConfig ctx = new DamageConfig(source);
+    @Override
+    public boolean hurt(
+            DamageSource source,
+            float amount
+    ) {
+
+        DamageConfig ctx =
+                new DamageConfig(source);
+
         if (!damageManager.canBeDamaged(ctx)) {
             return false;
         }
 
-        amount = damageManager.applyModifiers(ctx, amount);
+        amount =
+                damageManager.applyModifiers(
+                        ctx,
+                        amount
+                );
 
         if (rage != null) {
             rage.addFromDamage(amount);
         }
 
-        return super.hurt(source, amount);
+        return super.hurt(
+                source,
+                amount
+        );
     }
 
     @Override
-    public boolean causeFallDamage(float fallDistance, float damageMultiplier, DamageSource source) {
+    public boolean causeFallDamage(
+            float fallDistance,
+            float damageMultiplier,
+            DamageSource source
+    ) {
 
-        if (!this.getDamageProfile().shouldTakeFallDamage()) {
+        if (!damageManager.shouldTakeFallDamage()) {
             return false;
         }
 
-        return super.causeFallDamage(fallDistance, damageMultiplier, source);
+        return super.causeFallDamage(
+                fallDistance,
+                damageMultiplier,
+                source
+        );
     }
 
-    public VisualState getVisualState() {
-        float hp = this.getHealth();
-        float max = this.getMaxHealth();
+    // =========================================
+    // 📦 SPAWN
+    // =========================================
 
-        float threshold = this.config.damageThreshold;
+    @Override
+    public SpawnGroupData finalizeSpawn(
+            ServerLevelAccessor level,
+            DifficultyInstance difficulty,
+            MobSpawnType spawnType,
+            SpawnGroupData spawnData,
+            CompoundTag tag
+    ) {
+
+        setSkinId(
+                random.nextInt(
+                        getSkinCount()
+                )
+        );
+
+        return super.finalizeSpawn(
+                level,
+                difficulty,
+                spawnType,
+                spawnData,
+                tag
+        );
+    }
+
+    // =========================================
+    // 💾 SAVE DATA
+    // =========================================
+
+    @Override
+    public void addAdditionalSaveData(
+            CompoundTag tag
+    ) {
+
+        super.addAdditionalSaveData(tag);
+
+        tag.putInt(
+                "SkinId",
+                getSkinId()
+        );
+    }
+
+    @Override
+    public void readAdditionalSaveData(
+            CompoundTag tag
+    ) {
+
+        super.readAdditionalSaveData(tag);
+
+        if (tag.contains("SkinId")) {
+
+            setSkinId(
+                    tag.getInt("SkinId")
+            );
+        }
+    }
+
+    // =========================================
+    // 📊 VISUAL STATE
+    // =========================================
+
+    public VisualState getVisualState() {
+
+        float hp = getHealth();
+
+        float max = getMaxHealth();
+
+        float threshold =
+                config.damageThreshold;
 
         if (hp / max <= threshold) {
             return VisualState.DAMAGED;
@@ -265,12 +609,13 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
 
         return VisualState.NORMAL;
     }
-    // =============================
-    // 🔗 ABSTRACTS METHODS
-    // =============================
 
-    protected int getSkinCount() {
-        return this.config.skinCount;
+    // =========================================
+    // 📦 GETTERS
+    // =========================================
+
+    public String getEntityTag() {
+        return entityTag;
     }
 
     public DamageManager getDamageProfile() {
@@ -286,7 +631,14 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     }
 
     public AttributeConfig getAttributeConfig() {
-        return this.attributeConfig;
+        return attributeConfig;
     }
 
+    public IEntityAnimations getAnimations() {
+        return animations;
+    }
+
+    protected int getSkinCount() {
+        return config.skinCount;
+    }
 }

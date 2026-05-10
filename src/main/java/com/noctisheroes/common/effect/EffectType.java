@@ -5,5 +5,6 @@ public enum EffectType {
     POISON,
     BURN,
     SLOW,
-    STUN
+    STUN,
+    CONFUSION
 }

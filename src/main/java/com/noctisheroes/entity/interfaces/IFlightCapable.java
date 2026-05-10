@@ -1,8 +1,7 @@
 package com.noctisheroes.entity.interfaces;
 
 
-import com.noctisheroes.entity.ai.states.FlightState;
-import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import com.noctisheroes.entity.ai.flight.FlightState;
 
 public interface IFlightCapable{
 
@@ -21,18 +20,4 @@ public interface IFlightCapable{
      */
     void forceSetFlightState(FlightState state);
 
-    /**
-     * Obtém navegação para voo.
-     */
-    FlyingPathNavigation getFlyingNavigation();
-
-    /**
-     * Chance de iniciar voo em combate (0.0 - 1.0).
-     */
-    float getCombatFlightChance();
-
-    /**
-     * Chance de toggle aleatório de voo (0.0 - 1.0).
-     */
-    float getRandomFlightToggleChance();
 }

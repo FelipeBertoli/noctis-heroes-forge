@@ -56,15 +56,6 @@ public abstract class ViltrumiteBoss extends AbstractViltrumite{
         this.boss.removePlayer(player);
     }
 
-    @Override
-    public float getRandomFlightToggleChance() {
-        return randomFlightToggleChance;
-    }
-
-    @Override
-    public float getCombatFlightChance() {
-        return this.combatFlightToggleChance;
-    }
 
     // =============================
     // 🛡️ GETTERS PARA SUBCLASSES
