@@ -1,5 +1,6 @@
 package com.noctisheroes.entity.entities.base;
 
+import com.noctisheroes.common.ability.abilities.BlockAbility;
 import com.noctisheroes.common.ability.abilities.DestructiveDashAbility;
 import com.noctisheroes.common.ability.abilities.KineticPunchAbility;
 import com.noctisheroes.common.attribute.AttributeConfig;
@@ -39,6 +40,7 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
 
         this.getAbilityManager().register(new KineticPunchAbility());
         this.getAbilityManager().register(new DestructiveDashAbility());
+        this.getAbilityManager().register(new BlockAbility());
 
         this.getDamageProfile()
                 .ignoreFallDamage()
@@ -80,20 +82,13 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
-
         DamageConfig ctx = new DamageConfig(source);
 
-        // validação do sistema de dano
-        if (!getDamageProfile().canBeDamaged(ctx)) {
-            return false;
-        }
+        if (!getDamageProfile().canBeDamaged(ctx)) return false;
 
-        // aplica resistências / fraquezas
         amount = getDamageProfile().applyModifiers(ctx, amount);
 
-        // 🔥 GERA RAGE USANDO SEU SISTEMA
         if (getRage() != null) {
-
             if (ctx.isPhysical() || ctx.isExplosion() || ctx.isProjectile()) {
                 getRage().addFromDamage(amount);
             }
@@ -149,7 +144,7 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
         if (this.tickCount % interval != 0) return;
 
         // quantidade de cura
-        float healAmount = 0.3f + (ragePercent * 1.2f);
+        float healAmount = 0.8f + (ragePercent * 1.2f);
         // 0 rage → 0.5
         // full rage → 3.0
 

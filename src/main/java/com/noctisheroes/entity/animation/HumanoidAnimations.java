@@ -1,7 +1,5 @@
 package com.noctisheroes.entity.animation;
 
-import com.noctisheroes.entity.animation.AnimationKey;
-import com.noctisheroes.entity.animation.IEntityAnimations;
 import software.bernie.geckolib.core.animation.RawAnimation;
 
 public class HumanoidAnimations
@@ -23,10 +21,13 @@ public class HumanoidAnimations
             RawAnimation.begin()
                     .thenPlay("animation.humanoid.left_attack");
 
+    private static final RawAnimation BLOCK =
+            RawAnimation.begin()
+                    .thenLoop("animation.humanoid.block");
+
+
     @Override
-    public RawAnimation getAnimation(
-            AnimationKey key
-    ) {
+    public RawAnimation getAnimation(AnimationKey key) {
 
         return switch (key) {
 
@@ -41,6 +42,9 @@ public class HumanoidAnimations
 
             case LEFT_ATTACK ->
                     LEFT_ATTACK;
+
+            case BLOCK ->
+                    BLOCK;
 
             default ->
                     null;

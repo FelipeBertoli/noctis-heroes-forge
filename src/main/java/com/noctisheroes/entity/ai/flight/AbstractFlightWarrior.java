@@ -5,6 +5,7 @@ import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.entity.NoctisEntity;
 import com.noctisheroes.entity.ai.goals.DynamicTargetGoal;
 import com.noctisheroes.entity.ai.goals.FlyingChaseGoal;
+import com.noctisheroes.entity.animation.FlightHumanoidAnimations;
 import com.noctisheroes.entity.animation.IEntityAnimations;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
 import net.minecraft.core.BlockPos;

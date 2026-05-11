@@ -2,7 +2,7 @@ package com.noctisheroes.common.ability.helpers;
 
 import com.noctisheroes.entity.NoctisEntity;
 
-public abstract class TimedAbility<T extends NoctisEntity> implements iNoctisAbility<T> {
+public abstract class TimedAbility<T extends NoctisEntity> implements NoctisAbility<T> {
 
     protected int ticks;
 
@@ -21,11 +21,8 @@ public abstract class TimedAbility<T extends NoctisEntity> implements iNoctisAbi
     @Override
     public void tick(T entity) {
         ticks++;
+        if (ticks >= getDuration()) stop(entity);
         onTick(entity, ticks);
-
-        if (ticks >= getDuration()) {
-            stop(entity);
-        }
     }
 
     @Override
@@ -37,4 +34,7 @@ public abstract class TimedAbility<T extends NoctisEntity> implements iNoctisAbi
     public boolean isFinished(T entity) {
         return ticks >= getDuration();
     }
+
+
+
 }

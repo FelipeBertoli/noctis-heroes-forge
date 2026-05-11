@@ -1,5 +1,6 @@
 package com.noctisheroes.entity;
 
+import com.noctisheroes.common.ability.abilities.BlockAbility;
 import com.noctisheroes.common.attribute.AttributeConfig;
 import com.noctisheroes.common.combat.rage.RageConfig;
 import com.noctisheroes.common.config.EntityConfig;
@@ -10,7 +11,7 @@ import com.noctisheroes.common.effect.EffectManager;
 import com.noctisheroes.entity.animation.AnimationResolver;
 import com.noctisheroes.entity.ai.states.VisualState;
 import com.noctisheroes.entity.animation.AnimationKey;
-import com.noctisheroes.entity.ai.flight.FlightHumanoidAnimations;
+import com.noctisheroes.entity.animation.FlightHumanoidAnimations;
 import com.noctisheroes.entity.animation.IEntityAnimations;
 import com.noctisheroes.entity.components.RageComponent;
 import net.minecraft.nbt.CompoundTag;
@@ -44,57 +45,37 @@ import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public abstract class NoctisEntity
-        extends Monster
-        implements GeoEntity {
+public abstract class NoctisEntity extends Monster implements GeoEntity {
 
     // =========================================
     // 🎞️ ANIMATION
     // =========================================
-
-    private final AnimatableInstanceCache animationCache =
-            GeckoLibUtil.createInstanceCache(this);
-
+    private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private final IEntityAnimations animations;
-
     private AnimationKey currentActionAnimation;
-
     private int actionAnimationTicks = 0;
-
     private boolean lastAttackRight = false;
+    private AnimationKey lastMovementAnimation;
+    private boolean isBlocking = false;
 
     // =========================================
     // 📡 ENTITY DATA
     // =========================================
-
-    private static final EntityDataAccessor<Integer> SKIN_ID =
-            SynchedEntityData.defineId(
-                    NoctisEntity.class,
-                    EntityDataSerializers.INT
-            );
+    private static final EntityDataAccessor<Integer> SKIN_ID = SynchedEntityData.defineId(NoctisEntity.class, EntityDataSerializers.INT);
 
     // =========================================
     // ⚔️ SYSTEMS
     // =========================================
-
     private final DamageManager damageManager;
-
-    private final AbilityManager<NoctisEntity> abilityManager =
-            new AbilityManager<>();
-
-    private final EffectManager effectManager =
-            new EffectManager();
-
+    private final AbilityManager<NoctisEntity> abilityManager = new AbilityManager<>();
+    private final EffectManager effectManager = new EffectManager();
     private RageComponent rage;
 
     // =========================================
     // 📦 CONFIG
     // =========================================
-
     private final String entityTag;
-
     private final EntityConfig config;
-
     private final AttributeConfig attributeConfig;
 
     // =========================================
@@ -109,19 +90,12 @@ public abstract class NoctisEntity
             EntityConfig config,
             IEntityAnimations animations
     ) {
-
         super(type, level);
-
         this.entityTag = tag;
-
         this.attributeConfig = attributes;
-
         this.config = config;
-
         this.animations = animations;
-
         this.damageManager = new DamageManager();
-
         this.xpReward = config.xpReward;
     }
 
@@ -129,12 +103,8 @@ public abstract class NoctisEntity
     // 😡 RAGE
     // =========================================
 
-    protected void initRage(
-            RageConfig config
-    ) {
-
-        this.rage =
-                new RageComponent(this);
+    protected void initRage(RageConfig config) {
+        this.rage = new RageComponent(this);
     }
 
     public RageComponent getRage() {
@@ -147,33 +117,16 @@ public abstract class NoctisEntity
 
     @Override
     protected void defineSynchedData() {
-
         super.defineSynchedData();
-
-        this.entityData.define(
-                SKIN_ID,
-                0
-        );
+        this.entityData.define(SKIN_ID, 0);
     }
 
     public final int getSkinId() {
-
-        return this.entityData.get(
-                SKIN_ID
-        );
+        return this.entityData.get(SKIN_ID);
     }
 
-    protected final void setSkinId(
-            int id
-    ) {
-
-        if (id >= 0 && id < getSkinCount()) {
-
-            this.entityData.set(
-                    SKIN_ID,
-                    id
-            );
-        }
+    protected final void setSkinId(int id) {
+        if (id >= 0 && id < getSkinCount()) this.entityData.set(SKIN_ID, id);
     }
 
     // =========================================
@@ -186,79 +139,32 @@ public abstract class NoctisEntity
     }
 
     @Override
-    public void registerControllers(
-            AnimatableManager.ControllerRegistrar registrar
-    ) {
-
+    public void registerControllers(AnimatableManager.ControllerRegistrar registrar) {
+        registrar.add(new AnimationController<>(this, "locomotion", 2, this::locomotionController));
         registrar.add(
-
-                new AnimationController<>(
-                        this,
-                        "locomotion",
-                        2,
-                        this::locomotionController
-                )
-        );
-
-        registrar.add(
-
-                new AnimationController<>(
-                        this,
-                        "actions",
-                        state -> PlayState.STOP
-                )
-
-                        .triggerableAnim(
-                                "right_attack",
-                                animations.getAnimation(AnimationKey.RIGHT_ATTACK)
-                        )
-
-                        .triggerableAnim(
-                                "left_attack",
-                                animations.getAnimation(AnimationKey.LEFT_ATTACK)
-                        )
-
-                        .triggerableAnim(
-                                "block",
-                                animations.getAnimation(AnimationKey.BLOCK)
-                        )
+                new AnimationController<>(this, "actions", state -> PlayState.STOP)
+                        .triggerableAnim("right_attack", animations.getAnimation(AnimationKey.RIGHT_ATTACK))
+                        .triggerableAnim("left_attack", animations.getAnimation(AnimationKey.LEFT_ATTACK))
+                        .triggerableAnim("block", animations.getAnimation(AnimationKey.BLOCK))
         );
     }
 
-    private AnimationKey lastMovementAnimation;
 
 
     protected <E extends NoctisEntity>
-    PlayState locomotionController(
-            AnimationState<E> event
-    ) {
+    PlayState locomotionController(AnimationState<E> event) {
 
-        AnimationKey key =
-                AnimationResolver.resolveMovement(this);
+        AnimationKey key = AnimationResolver.resolveMovement(this);
 
-        if (key == null) {
-            return PlayState.STOP;
-        }
+        if (key == null) return PlayState.STOP;
+        RawAnimation animation = animations.getAnimation(key);
 
-        RawAnimation animation =
-                animations.getAnimation(key);
-
-        if (animation == null) {
-            return PlayState.STOP;
-        }
+        if (animation == null) return PlayState.STOP;
 
         if (lastMovementAnimation != key) {
-
             event.getController().forceAnimationReset();
-
             lastMovementAnimation = key;
-
-            if (animations instanceof FlightHumanoidAnimations flight) {
-
-                if (key == AnimationKey.HUNT_FLIGHT) {
-                    flight.resetHuntFlightVariation();
-                }
-            }
+            if (animations instanceof FlightHumanoidAnimations flight) if (key == AnimationKey.HUNT_FLIGHT) flight.resetHuntFlightVariation();
         }
 
         event.setAndContinue(animation);
@@ -272,52 +178,27 @@ public abstract class NoctisEntity
 
     private AnimationKey queuedActionAnimation;
 
-    public void playActionAnimation(
-            AnimationKey key
-    ) {
-
+    public void playActionAnimation(AnimationKey key) {
         this.queuedActionAnimation = key;
     }
 
     protected <E extends NoctisEntity>
-    PlayState actionController(
-            AnimationState<E> event
-    ) {
+    PlayState actionController(AnimationState<E> event) {
 
         var controller = event.getController();
 
-        // =====================================
-        // NOVA ANIMAÇÃO
-        // =====================================
-
         if (queuedActionAnimation != null) {
-
-            RawAnimation animation =
-                    animations.getAnimation(
-                            queuedActionAnimation
-                    );
-
+            RawAnimation animation = animations.getAnimation(queuedActionAnimation);
             queuedActionAnimation = null;
 
             if (animation != null) {
-
                 controller.forceAnimationReset();
-
                 controller.setAnimation(animation);
-
                 return PlayState.CONTINUE;
             }
         }
 
-        // =====================================
-        // MANTER ANIMAÇÃO ATUAL
-        // =====================================
-
-        if (controller.getAnimationState()
-                != AnimationController.State.STOPPED) {
-
-            return PlayState.CONTINUE;
-        }
+        if (controller.getAnimationState() != AnimationController.State.STOPPED) return PlayState.CONTINUE;
 
         return PlayState.STOP;
     }
@@ -325,27 +206,10 @@ public abstract class NoctisEntity
     // 🥊 BASIC ATTACKS
     // =========================================
 
-    public AnimationKey nextAttackAnimation() {
-
-        lastAttackRight = !lastAttackRight;
-
-        return lastAttackRight
-                ? AnimationKey.RIGHT_ATTACK
-                : AnimationKey.LEFT_ATTACK;
-    }
-
     @Override
     public boolean doHurtTarget(Entity target) {
-
-        triggerAnim(
-                "actions",
-                lastAttackRight
-                        ? "right_attack"
-                        : "left_attack"
-        );
-
+        triggerAnim("actions", lastAttackRight ? "right_attack" : "left_attack");
         lastAttackRight = !lastAttackRight;
-
         return super.doHurtTarget(target);
     }
 
@@ -355,89 +219,30 @@ public abstract class NoctisEntity
 
     @Override
     protected void registerGoals() {
-
         registerMovementGoals();
-
         registerCombatGoals();
-
         registerLookingGoals();
-
         registerTargetGoals();
     }
 
     protected void registerMovementGoals() {
-
-        goalSelector.addGoal(
-                2,
-                new WaterAvoidingRandomStrollGoal(
-                        this,
-                        1.0D
-                )
-        );
+        goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D));
     }
 
     protected void registerCombatGoals() {
-
-        goalSelector.addGoal(
-                1,
-                new MeleeAttackGoal(
-                        this,
-                        1.3D,
-                        false
-                )
-        );
+        goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.3D, false));
     }
 
     protected void registerLookingGoals() {
-
-        goalSelector.addGoal(
-                3,
-                new LookAtPlayerGoal(
-                        this,
-                        Player.class,
-                        8.0F
-                )
-        );
-
-        goalSelector.addGoal(
-                4,
-                new RandomLookAroundGoal(this)
-        );
+        goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
+        goalSelector.addGoal(4, new RandomLookAroundGoal(this));
     }
 
     protected void registerTargetGoals() {
-
-        targetSelector.addGoal(
-                1,
-                new HurtByTargetGoal(this)
-        );
-
-        targetSelector.addGoal(
-                2,
-                new NearestAttackableTargetGoal<>(
-                        this,
-                        Player.class,
-                        true
-                )
-        );
-
-        targetSelector.addGoal(
-                3,
-                new NearestAttackableTargetGoal<>(
-                        this,
-                        AbstractVillager.class,
-                        false
-                )
-        );
-
-        targetSelector.addGoal(
-                4,
-                new NearestAttackableTargetGoal<>(
-                        this,
-                        IronGolem.class,
-                        false
-                )
-        );
+        targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
+        targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, IronGolem.class, false));
     }
 
     // =========================================
@@ -446,36 +251,17 @@ public abstract class NoctisEntity
 
     @Override
     public void tick() {
-
         super.tick();
 
-        // =====================================
-        // ⚔️ ACTION TIMER
-        // =====================================
-
         if (actionAnimationTicks > 0) {
-
             actionAnimationTicks--;
-
-            if (actionAnimationTicks <= 0) {
-
-                currentActionAnimation = null;
-            }
+            if (actionAnimationTicks <= 0) currentActionAnimation = null;
         }
 
-        // =====================================
-        // 🧠 SYSTEMS
-        // =====================================
-
         if (!level().isClientSide) {
-
             abilityManager.tick(this);
-
             effectManager.tick(this);
-
-            if (rage != null) {
-                rage.tick();
-            }
+            if (rage != null) rage.tick();
         }
     }
 
@@ -484,50 +270,21 @@ public abstract class NoctisEntity
     // =========================================
 
     @Override
-    public boolean hurt(
-            DamageSource source,
-            float amount
-    ) {
+    public boolean hurt(DamageSource source, float amount) {
+        if(this.isBlocking) return false;
+        DamageConfig ctx = new DamageConfig(source);
+        if (!damageManager.canBeDamaged(ctx)) return false;
+        amount = damageManager.applyModifiers( ctx, amount );
+        if (rage != null) rage.addFromDamage(amount);
 
-        DamageConfig ctx =
-                new DamageConfig(source);
-
-        if (!damageManager.canBeDamaged(ctx)) {
-            return false;
-        }
-
-        amount =
-                damageManager.applyModifiers(
-                        ctx,
-                        amount
-                );
-
-        if (rage != null) {
-            rage.addFromDamage(amount);
-        }
-
-        return super.hurt(
-                source,
-                amount
-        );
+        return super.hurt(source, amount);
     }
 
     @Override
-    public boolean causeFallDamage(
-            float fallDistance,
-            float damageMultiplier,
-            DamageSource source
-    ) {
+    public boolean causeFallDamage(float fallDistance, float damageMultiplier, DamageSource source) {
+        if (!damageManager.shouldTakeFallDamage()) return false;
 
-        if (!damageManager.shouldTakeFallDamage()) {
-            return false;
-        }
-
-        return super.causeFallDamage(
-                fallDistance,
-                damageMultiplier,
-                source
-        );
+        return super.causeFallDamage(fallDistance, damageMultiplier, source);
     }
 
     // =========================================
@@ -542,20 +299,9 @@ public abstract class NoctisEntity
             SpawnGroupData spawnData,
             CompoundTag tag
     ) {
+        setSkinId(random.nextInt(getSkinCount()));
 
-        setSkinId(
-                random.nextInt(
-                        getSkinCount()
-                )
-        );
-
-        return super.finalizeSpawn(
-                level,
-                difficulty,
-                spawnType,
-                spawnData,
-                tag
-        );
+        return super.finalizeSpawn(level, difficulty, spawnType, spawnData, tag);
     }
 
     // =========================================
@@ -563,31 +309,15 @@ public abstract class NoctisEntity
     // =========================================
 
     @Override
-    public void addAdditionalSaveData(
-            CompoundTag tag
-    ) {
-
+    public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
-
-        tag.putInt(
-                "SkinId",
-                getSkinId()
-        );
+        tag.putInt("SkinId", getSkinId());
     }
 
     @Override
-    public void readAdditionalSaveData(
-            CompoundTag tag
-    ) {
-
+    public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
-
-        if (tag.contains("SkinId")) {
-
-            setSkinId(
-                    tag.getInt("SkinId")
-            );
-        }
+        if (tag.contains("SkinId")) setSkinId(tag.getInt("SkinId"));
     }
 
     // =========================================
@@ -595,17 +325,10 @@ public abstract class NoctisEntity
     // =========================================
 
     public VisualState getVisualState() {
-
         float hp = getHealth();
-
         float max = getMaxHealth();
-
-        float threshold =
-                config.damageThreshold;
-
-        if (hp / max <= threshold) {
-            return VisualState.DAMAGED;
-        }
+        float threshold = config.damageThreshold;
+        if (hp / max <= threshold) return VisualState.DAMAGED;
 
         return VisualState.NORMAL;
     }
@@ -641,4 +364,15 @@ public abstract class NoctisEntity
     protected int getSkinCount() {
         return config.skinCount;
     }
+
+    @Override
+    public boolean isBlocking() {
+        return isBlocking;
+    }
+
+    public void setBlocking(boolean blocking) {
+        isBlocking = blocking;
+    }
+
+
 }
