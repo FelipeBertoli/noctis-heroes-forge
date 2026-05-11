@@ -9,6 +9,7 @@ import com.noctisheroes.common.combat.rage.IRageUser;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.combat.damage.DamageTags;
 import com.noctisheroes.entity.ai.flight.AbstractFlightWarrior;
+import com.noctisheroes.entity.ai.goals.AttackTargetGoal;
 import com.noctisheroes.entity.ai.goals.DynamicTargetGoal;
 import com.noctisheroes.entity.components.RageComponent;
 import net.minecraft.server.level.ServerLevel;
@@ -150,6 +151,11 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
 
         this.heal(healAmount);
 
+    }
+
+    @Override
+    protected void registerCombatGoals() {
+        goalSelector.addGoal(1, new AttackTargetGoal(this, 1.3D, true));
     }
 
     @Override

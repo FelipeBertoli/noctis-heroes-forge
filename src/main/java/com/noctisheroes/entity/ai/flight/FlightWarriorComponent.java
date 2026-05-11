@@ -11,7 +11,7 @@ public class FlightWarriorComponent {
     private final IFlightCapable flightEntity;
     private int stateTicks = 0;
     private int sonicBoomCooldown = 0;
-    private double sonicSpeedMultiplier = 1.0;
+    private double sonicSpeedMultiplier = 1.3;
     private int sonicTicks = 0;
 
     private static final int MIN_TICKS_BETWEEN_FLIGHT_CHANGE = 10;
@@ -33,6 +33,8 @@ public class FlightWarriorComponent {
 
     private void updateState( NoctisEntity entity) {
 
+        if (entity.abilityBlocking()) return;
+
         LivingEntity target = entity.getTarget();
         FlightState current = flightEntity.getFlightState();
 
@@ -48,13 +50,8 @@ public class FlightWarriorComponent {
             }
 
             case HUNT_FLIGHT -> {
-
-                //if (target == null || distance < 3) {switchState(FlightState.FLIGHT_STOP);}
-                //else if (distance > 40) { switchState(FlightState.LEVITATE);}
-
                 if (target == null) { switchState(FlightState.FLIGHT_STOP); }
-                // else if (!entity.hasLineOfSight(target)) { switchState(FlightState.FLIGHT_STOP); }
-                else if (target.getDeltaMovement().lengthSqr() < 0.02 && entity.distanceTo(target) <= 6) { switchState(FlightState.FLIGHT_STOP); }
+                else if (stateTicks > 25 && target.getDeltaMovement().lengthSqr() < 0.04 && entity.distanceTo(target) <= 10) { switchState(FlightState.FLIGHT_STOP); }
             }
 
             case FLIGHT_STOP -> {
@@ -62,7 +59,7 @@ public class FlightWarriorComponent {
             }
 
             case LEVITATE -> {
-                if (target != null && distance > 6) {switchState( FlightState.FLIGHT_START);}
+                if (target != null && distance > 10) {switchState( FlightState.FLIGHT_START);}
             }
         }
     }
@@ -73,19 +70,24 @@ public class FlightWarriorComponent {
 
         if (state == FlightState.HUNT_FLIGHT) {
             sonicTicks++;
-            sonicSpeedMultiplier = Math.min(2.0, 1.0 + (sonicTicks * 0.003));
+            sonicSpeedMultiplier = Math.min(2.0, 1.0 + (sonicTicks * 0.015));
         }
 
         else {
             sonicTicks = 0;
-            sonicSpeedMultiplier = 1.0;
+            sonicSpeedMultiplier = 1.3;
         }
     }
 
     private void applyFlightPhysics(NoctisEntity entity) {
 
+        if (entity.abilityBlocking()) {
+            entity.getNavigation().stop();
+            entity.setDeltaMovement(Vec3.ZERO);
+            entity.lerpMotion(0, 0, 0);
+            return;
+        }
         FlightState state = flightEntity.getFlightState();
-
 
         if (state == FlightState.GROUNDED) { return; }
         LivingEntity target = entity.getTarget();
@@ -98,23 +100,23 @@ public class FlightWarriorComponent {
         }
 
         double acceleration = switch (state) {
-            case FLIGHT_START -> 0.03;
+            case FLIGHT_START -> 0.3;
             case HUNT_FLIGHT -> 0.3 * sonicSpeedMultiplier;
             case LEVITATE -> 0.06;
-            case FLIGHT_STOP -> 0.005;
+            case FLIGHT_STOP -> 0.009;
             default -> 0.0;
         };
 
         double maxSpeed = switch (state) {
-            case FLIGHT_START -> 0.30;
+            case FLIGHT_START -> 0.5;
             case HUNT_FLIGHT -> 0.5 * sonicSpeedMultiplier;
             case LEVITATE -> 0.08;
-            case FLIGHT_STOP -> 0.05;
+            case FLIGHT_STOP -> 0.13;
             default -> 0.0;
         };
 
         double drag = switch (state) {
-            case HUNT_FLIGHT -> 0.985;
+            case HUNT_FLIGHT -> 0.985 + Math.min(0.01, sonicSpeedMultiplier * 0.003);
             case LEVITATE -> 0.90;
             default -> 0.93;
         };
@@ -134,7 +136,7 @@ public class FlightWarriorComponent {
     private void handleSonicBoom( NoctisEntity entity) {
         if (sonicBoomCooldown > 0) { sonicBoomCooldown--;}
         double speed = entity.getDeltaMovement().length();
-        if (speed > 0.85 && sonicBoomCooldown <= 0) {
+        if (speed > 0.65 && sonicBoomCooldown <= 0) {
             AbilityParticleEffects.spawnSonicBoomEffect(entity);
             sonicBoomCooldown = 40;
         }

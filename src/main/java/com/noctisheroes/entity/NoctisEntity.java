@@ -8,6 +8,7 @@ import com.noctisheroes.common.ability.helpers.AbilityManager;
 import com.noctisheroes.common.combat.damage.DamageConfig;
 import com.noctisheroes.common.combat.damage.DamageManager;
 import com.noctisheroes.common.effect.EffectManager;
+import com.noctisheroes.entity.ai.goals.AttackTargetGoal;
 import com.noctisheroes.entity.animation.AnimationResolver;
 import com.noctisheroes.entity.ai.states.VisualState;
 import com.noctisheroes.entity.animation.AnimationKey;
@@ -56,7 +57,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     private int actionAnimationTicks = 0;
     private boolean lastAttackRight = false;
     private AnimationKey lastMovementAnimation;
-    private boolean isBlocking = false;
+    private boolean isAbilityBlocking = false;
 
     // =========================================
     // 📡 ENTITY DATA
@@ -149,8 +150,6 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         );
     }
 
-
-
     protected <E extends NoctisEntity>
     PlayState locomotionController(AnimationState<E> event) {
 
@@ -172,36 +171,19 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         return PlayState.CONTINUE;
     }
 
-    // =========================================
-    // ⚔️ ACTION CONTROLLER
-    // =========================================
+    public void stopTriggeredAnim(String controller) {
 
-    private AnimationKey queuedActionAnimation;
+        var animController =
+                getAnimatableInstanceCache()
+                        .getManagerForId(getId())
+                        .getAnimationControllers()
+                        .get(controller);
 
-    public void playActionAnimation(AnimationKey key) {
-        this.queuedActionAnimation = key;
-    }
-
-    protected <E extends NoctisEntity>
-    PlayState actionController(AnimationState<E> event) {
-
-        var controller = event.getController();
-
-        if (queuedActionAnimation != null) {
-            RawAnimation animation = animations.getAnimation(queuedActionAnimation);
-            queuedActionAnimation = null;
-
-            if (animation != null) {
-                controller.forceAnimationReset();
-                controller.setAnimation(animation);
-                return PlayState.CONTINUE;
-            }
+        if (animController != null) {
+            animController.forceAnimationReset();
         }
-
-        if (controller.getAnimationState() != AnimationController.State.STOPPED) return PlayState.CONTINUE;
-
-        return PlayState.STOP;
     }
+
     // =========================================
     // 🥊 BASIC ATTACKS
     // =========================================
@@ -230,7 +212,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
     }
 
     protected void registerCombatGoals() {
-        goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.3D, false));
+        goalSelector.addGoal(1, new AttackTargetGoal(this, 1.3D, false));
     }
 
     protected void registerLookingGoals() {
@@ -271,7 +253,7 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if(this.isBlocking) return false;
+        if(this.isAbilityBlocking) return false;
         DamageConfig ctx = new DamageConfig(source);
         if (!damageManager.canBeDamaged(ctx)) return false;
         amount = damageManager.applyModifiers( ctx, amount );
@@ -365,13 +347,12 @@ public abstract class NoctisEntity extends Monster implements GeoEntity {
         return config.skinCount;
     }
 
-    @Override
-    public boolean isBlocking() {
-        return isBlocking;
+    public boolean abilityBlocking() {
+        return isAbilityBlocking;
     }
 
     public void setBlocking(boolean blocking) {
-        isBlocking = blocking;
+        isAbilityBlocking = blocking;
     }
 
 

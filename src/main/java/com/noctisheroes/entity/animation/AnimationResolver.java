@@ -4,10 +4,6 @@ import com.noctisheroes.entity.NoctisEntity;
 import com.noctisheroes.entity.ai.flight.FlightState;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
 
-/**
- * Resolve qual animação tocar baseado no estado de movimento e voo.
- * A lógica de transição de estados é controlada por FlightWarriorComponent.
- */
 public class AnimationResolver {
 
     public static AnimationKey resolveMovement(
@@ -20,55 +16,20 @@ public class AnimationResolver {
 
             return switch (state) {
 
-                // =====================================
-                // TRANSIÇÕES DE VOO
-                // =====================================
-
-                case FLIGHT_START ->
-                        AnimationKey.FLIGHT_START;
-
-                case FLIGHT_STOP ->
-                        AnimationKey.FLIGHT_STOP;
-
-                case HUNT_FLIGHT ->
-                        AnimationKey.HUNT_FLIGHT;
-
-                // =====================================
-                // LEVITATE (parado ou se movendo)
-                // =====================================
-
+                case FLIGHT_START -> AnimationKey.FLIGHT_START;
+                case FLIGHT_STOP -> AnimationKey.FLIGHT_STOP;
+                case HUNT_FLIGHT -> AnimationKey.HUNT_FLIGHT;
                 case LEVITATE -> {
-
-                    boolean moving = entity.getDeltaMovement()
-                            .lengthSqr() > 0.002;
-
-                    yield moving
-                            ? AnimationKey.LEVITATE_FLIGHT
-                            : AnimationKey.LEVITATE_IDLE;
+                    boolean moving = entity.getDeltaMovement().lengthSqr() > 0.002;
+                    yield moving ? AnimationKey.LEVITATE_FLIGHT : AnimationKey.LEVITATE_IDLE;
                 }
-
-                // =====================================
-                // GROUNDED (chão)
-                // =====================================
-
                 case GROUNDED -> {
-
-                    boolean moving = entity.getDeltaMovement()
-                            .horizontalDistanceSqr() > 0.002;
-
-                    yield moving
-                            ? AnimationKey.WALK
-                            : AnimationKey.IDLE;
+                    boolean moving = entity.getDeltaMovement().horizontalDistanceSqr() > 0.002;
+                    yield moving ? AnimationKey.WALK : AnimationKey.IDLE;
                 }
-
                 default -> {
-
-                    boolean moving = entity.getDeltaMovement()
-                            .horizontalDistanceSqr() > 0.002;
-
-                    yield moving
-                            ? AnimationKey.WALK
-                            : AnimationKey.IDLE;
+                    boolean moving = entity.getDeltaMovement().horizontalDistanceSqr() > 0.002;
+                    yield moving ? AnimationKey.WALK : AnimationKey.IDLE;
                 }
             };
         }
@@ -77,8 +38,6 @@ public class AnimationResolver {
         boolean moving = entity.getDeltaMovement()
                 .horizontalDistanceSqr() > 0.002;
 
-        return moving
-                ? AnimationKey.WALK
-                : AnimationKey.IDLE;
+        return moving ? AnimationKey.WALK : AnimationKey.IDLE;
     }
 }

@@ -1,17 +1,19 @@
 package com.noctisheroes.entity.ai.goals;
 
+import com.noctisheroes.entity.NoctisEntity;
 import com.noctisheroes.entity.ai.flight.FlightState;
 import com.noctisheroes.entity.ai.flight.FlightWarriorComponent;
 import com.noctisheroes.entity.interfaces.IFlightCapable;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 
 public class FlyingChaseGoal extends Goal {
 
-    private final Mob mob;
+    private final NoctisEntity mob;
     private final IFlightCapable flightMob;
     private final FlightWarriorComponent flightComponent;
     private LivingEntity target;
@@ -21,7 +23,7 @@ public class FlyingChaseGoal extends Goal {
     // =========================================
 
     public FlyingChaseGoal(
-            Mob mob,
+            NoctisEntity mob,
             IFlightCapable flightMob,
             FlightWarriorComponent flightComponent
     ) {
@@ -30,12 +32,7 @@ public class FlyingChaseGoal extends Goal {
         this.flightMob = flightMob;
         this.flightComponent = flightComponent;
 
-        this.setFlags(
-                EnumSet.of(
-                        Flag.MOVE,
-                        Flag.LOOK
-                )
-        );
+        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
     // =========================================
@@ -45,11 +42,10 @@ public class FlyingChaseGoal extends Goal {
     @Override
     public boolean canUse() {
 
-        target = mob.getTarget();
+        if(mob.abilityBlocking()) return false;
 
-        if (target == null || !target.isAlive()) {
-            return false;
-        }
+        target = mob.getTarget();
+        if (target == null || !target.isAlive()) return false;
 
         // =====================================
         // VERIFICA PROXIMIDADE E VISIBILIDADE
@@ -67,12 +63,9 @@ public class FlyingChaseGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
+        if(mob.abilityBlocking()) return false;
+        if (target == null || !target.isAlive()) return false;
 
-        if (target == null || !target.isAlive()) {
-            return false;
-        }
-
-        // Continua enquanto o alvo estiver vivo
         return mob.hasLineOfSight(target);
     }
 
@@ -82,6 +75,13 @@ public class FlyingChaseGoal extends Goal {
 
     @Override
     public void tick() {
+
+        if (mob.isBlocking()) {
+            mob.getNavigation().stop();
+            mob.setDeltaMovement(Vec3.ZERO);
+            mob.lerpMotion(0,0,0);
+            return;
+        }
 
         FlightState currentState = flightMob.getFlightState();
 

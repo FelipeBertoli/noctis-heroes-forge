@@ -20,9 +20,14 @@ public abstract class TimedAbility<T extends NoctisEntity> implements NoctisAbil
 
     @Override
     public void tick(T entity) {
+
         ticks++;
-        if (ticks >= getDuration()) stop(entity);
+
         onTick(entity, ticks);
+
+        if (ticks >= getDuration()) {
+            stop(entity);
+        }
     }
 
     @Override
@@ -34,7 +39,5 @@ public abstract class TimedAbility<T extends NoctisEntity> implements NoctisAbil
     public boolean isFinished(T entity) {
         return ticks >= getDuration();
     }
-
-
 
 }
