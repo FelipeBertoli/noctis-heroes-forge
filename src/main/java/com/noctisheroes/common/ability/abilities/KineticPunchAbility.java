@@ -20,16 +20,6 @@ public class KineticPunchAbility extends SuperPunchAbility
     }
 
     @Override
-    public int getCooldown() {
-        return 40;
-    }
-
-    @Override
-    public int getPriority() {
-        return 35;
-    }
-
-    @Override
     protected void performPunch(NoctisEntity entity, LivingEntity target) {
 
         super.performPunch(entity, target);
@@ -44,10 +34,6 @@ public class KineticPunchAbility extends SuperPunchAbility
                 target.getDeltaMovement().z + dir.z * rage * 2.0
         );
     }
-
-    // =============================
-    // 🔥 RESOURCE SYSTEM
-    // =============================
 
     @Override
     public boolean hasResource(NoctisEntity entity) {

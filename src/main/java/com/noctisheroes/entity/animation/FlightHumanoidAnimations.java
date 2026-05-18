@@ -24,7 +24,7 @@ public class FlightHumanoidAnimations
 
     private static final RawAnimation HUNT_FLIGHT_1 =
             RawAnimation.begin()
-                    .thenLoop("animation.humanoid.hunt_flight");
+                    .thenLoop("animation.humanoid.hunt_flight1");
 
     private static final RawAnimation HUNT_FLIGHT_2 =
             RawAnimation.begin()

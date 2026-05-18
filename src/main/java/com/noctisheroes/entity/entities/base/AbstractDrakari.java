@@ -2,13 +2,13 @@ package com.noctisheroes.entity.entities.base;
 
 import com.noctisheroes.common.ability.abilities.BlockAbility;
 import com.noctisheroes.common.ability.abilities.DestructiveDashAbility;
+import com.noctisheroes.common.ability.abilities.InertiaFieldAbility;
 import com.noctisheroes.common.ability.abilities.KineticPunchAbility;
 import com.noctisheroes.common.attribute.AttributeConfig;
 import com.noctisheroes.common.combat.damage.DamageConfig;
 import com.noctisheroes.common.combat.rage.IRageUser;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.common.combat.damage.DamageTags;
-import com.noctisheroes.entity.ai.flight.AbstractFlightWarrior;
 import com.noctisheroes.entity.ai.goals.AttackTargetGoal;
 import com.noctisheroes.entity.ai.goals.DynamicTargetGoal;
 import com.noctisheroes.entity.components.RageComponent;
@@ -42,6 +42,7 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
         this.getAbilityManager().register(new KineticPunchAbility());
         this.getAbilityManager().register(new DestructiveDashAbility());
         this.getAbilityManager().register(new BlockAbility());
+        this.getAbilityManager().register(new InertiaFieldAbility());
 
         this.getDamageProfile()
                 .ignoreFallDamage()
@@ -89,50 +90,29 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
 
         amount = getDamageProfile().applyModifiers(ctx, amount);
 
-        if (getRage() != null) {
-            if (ctx.isPhysical() || ctx.isExplosion() || ctx.isProjectile()) {
-                getRage().addFromDamage(amount);
-            }
-        }
+        if (getRage() != null) if (ctx.isPhysical() || ctx.isExplosion() || ctx.isProjectile()) getRage().addFromDamage(amount);
 
         return super.hurt(source, amount);
     }
 
-    // =============================
-    // 📈 SCALING
-    // =============================
 
-    private void applyRageScaling() {
+    public void applyRageScaling() {
 
         float r = rage.getPercent();
 
-        // escala progressiva
-        double physicBonus = 0.5 + r * 1.2;// até +150%
+        double physicBonus = 0.5 + r * 1.2;
         double resistanceBonus = 0.5 + r * 1.5;
         double speedBonus = 0.5 + r * 1.2;
 
         AttributeConfig base = this.getAttributeConfig();
 
-        this.getAttribute(Attributes.ATTACK_DAMAGE)
-                .setBaseValue(base.attackDamage * physicBonus);
-
-        this.getAttribute(Attributes.MOVEMENT_SPEED)
-                .setBaseValue(base.movementSpeed * speedBonus);
-
-        this.getAttribute(Attributes.FLYING_SPEED)
-                .setBaseValue(base.flyingSpeed * speedBonus);
-
-        this.getAttribute(Attributes.ARMOR)
-                .setBaseValue(base.armor * resistanceBonus);
-
-        this.getAttribute(Attributes.ARMOR_TOUGHNESS)
-                .setBaseValue(base.armorToughness * resistanceBonus);
-
-        this.getAttribute(Attributes.ATTACK_KNOCKBACK)
-                .setBaseValue(base.attackKnockback * physicBonus);
-
-        this.getAttribute(Attributes.ATTACK_SPEED)
-                .setBaseValue(base.attackSpeed * speedBonus);
+        this.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(base.attackDamage * physicBonus);
+        this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(base.movementSpeed * speedBonus);
+        this.getAttribute(Attributes.FLYING_SPEED).setBaseValue(base.flyingSpeed * speedBonus);
+        this.getAttribute(Attributes.ARMOR).setBaseValue(base.armor * resistanceBonus);
+        this.getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(base.armorToughness * resistanceBonus);
+        this.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(base.attackKnockback * physicBonus);
+        this.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(base.attackSpeed * speedBonus);
     }
 
     private void applyRageRegen(float ragePercent) {
@@ -166,17 +146,10 @@ public abstract class AbstractDrakari extends AbstractFlightWarrior implements I
         targetSelector.addGoal(4, new DynamicTargetGoal<>(this, IronGolem.class, true));
     }
 
-    // =============================
-    // 🎨 COR ROXA (RENDER HOOK)
-    // =============================
 
     public float getRageTint() {
         return rage.getPercent(); // 0 → 1
     }
-
-    // =============================
-    // 🔗 GETTER
-    // =============================
 
     @Override
     public RageComponent getRage() {

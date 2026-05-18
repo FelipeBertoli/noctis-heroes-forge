@@ -13,12 +13,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NoctisEntityRenderer<T extends NoctisEntity>
-        extends GeoEntityRenderer<T> {
-
-    // =============================
-    // 📦 CAMPOS
-    // =============================
+public class NoctisEntityRenderer<T extends NoctisEntity> extends GeoEntityRenderer<T> {
 
     private final String texturePath;
     private final String classPath;

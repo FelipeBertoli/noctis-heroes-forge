@@ -36,7 +36,5 @@ public interface NoctisAbility<T extends NoctisEntity> {
         return false;
     }
 
-    default boolean grantsInvulnerability() {
-        return false;
-    }
+    default boolean grantsInvulnerability() { return false;}
 }

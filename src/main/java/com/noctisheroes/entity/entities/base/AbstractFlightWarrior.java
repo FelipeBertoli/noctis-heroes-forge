@@ -1,8 +1,10 @@
-package com.noctisheroes.entity.ai.flight;
+package com.noctisheroes.entity.entities.base;
 
 import com.noctisheroes.common.attribute.AttributeConfig;
 import com.noctisheroes.common.config.EntityConfig;
 import com.noctisheroes.entity.NoctisEntity;
+import com.noctisheroes.entity.ai.flight.FlightState;
+import com.noctisheroes.entity.ai.flight.FlightWarriorComponent;
 import com.noctisheroes.entity.ai.goals.DynamicTargetGoal;
 import com.noctisheroes.entity.ai.goals.FlyingChaseGoal;
 import com.noctisheroes.entity.animation.FlightHumanoidAnimations;

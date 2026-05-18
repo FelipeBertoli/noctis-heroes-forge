@@ -102,16 +102,16 @@ public class FlightWarriorComponent {
         double acceleration = switch (state) {
             case FLIGHT_START -> 0.3;
             case HUNT_FLIGHT -> 0.3 * sonicSpeedMultiplier;
-            case LEVITATE -> 0.06;
-            case FLIGHT_STOP -> 0.009;
+            case LEVITATE -> 0.12;
+            case FLIGHT_STOP -> 0.15;
             default -> 0.0;
         };
 
         double maxSpeed = switch (state) {
-            case FLIGHT_START -> 0.5;
-            case HUNT_FLIGHT -> 0.5 * sonicSpeedMultiplier;
-            case LEVITATE -> 0.08;
-            case FLIGHT_STOP -> 0.13;
+            case FLIGHT_START -> 0.6;
+            case HUNT_FLIGHT -> 0.6 * sonicSpeedMultiplier;
+            case LEVITATE -> 0.16;
+            case FLIGHT_STOP -> 0.19;
             default -> 0.0;
         };
 

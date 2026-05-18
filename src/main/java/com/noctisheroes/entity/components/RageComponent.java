@@ -17,18 +17,13 @@ public class RageComponent {
 
     public void tick() {
 
-        // ganho passivo
         add(0.03f);
 
-        // 🔥 AURA VISUAL
-        if (!entity.level().isClientSide && entity.level() instanceof ServerLevel level) {
-
-            float percent = getPercent();
-
-            if (percent > 0.1f) {
-                spawnAura(level, percent);
-            }
-        }
+//        if (!entity.level().isClientSide && entity.level() instanceof ServerLevel level) {
+//            float percent = getPercent();
+//            if (percent > 0.1f) spawnAura(level, percent);
+//
+//        }
     }
 
     private void spawnAura(ServerLevel level, float intensity) {
@@ -36,7 +31,6 @@ public class RageComponent {
         int count = (int) (2 + intensity * 8);
 
         for (int i = 0; i < count; i++) {
-
             double angle = Math.random() * Math.PI * 2;
             double radius = 0.5 + intensity * 1.5;
 

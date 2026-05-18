@@ -26,28 +26,19 @@ public class DestructiveDashAbility extends TimedAbility<NoctisEntity> {
     private static final float EXPLOSION_RADIUS = 2.0f;
     private static final double HIT_DETECTION_RANGE = 3.5;
     private static final double IMPACT_DETECTION_RADIUS = 3.0;
-    private static final double ABILITY_DURATION = 25;
+    private static final int ABILITY_DURATION = 25;
 
     @Override
-    public String getId() {
-        return "destructive_dash";
-    }
+    public String getId() { return "destructive_dash"; }
 
     @Override
-    public int getCooldown() {
-        return 100;
-    }
+    public int getCooldown() { return 100; }
 
     @Override
-    public int getPriority() {
-        return 10;
-    }
-
+    public int getPriority() { return 20; }
 
     @Override
-    protected int getDuration() {
-        return 25;
-    }
+    protected int getDuration() { return ABILITY_DURATION;}
 
     @Override
     public boolean canUse(NoctisEntity entity) {
@@ -55,7 +46,8 @@ public class DestructiveDashAbility extends TimedAbility<NoctisEntity> {
         if (target == null) return false;
 
         double dist = entity.distanceTo(target);
-        return dist > 5.0 && dist < 18.0 && entity.getRandom().nextFloat() < 0.03f;
+        return dist > 5.0 && dist < 18.0;
+                //&& entity.getRandom().nextFloat() < 0.03f
     }
 
     @Override
@@ -77,9 +69,7 @@ public class DestructiveDashAbility extends TimedAbility<NoctisEntity> {
             return;
         }
 
-        if (ticks <= DASH_DURATION) {
-            AbilityHelper.dashToTarget(entity, target, DASH_SPEED);
-        }
+        if (ticks <= DASH_DURATION) AbilityHelper.dashToTarget(entity, target, DASH_SPEED);
 
         else if (ticks == HIT_FRAME) {
             float damage = AbilityHelper.scaledAttack(entity, 1.5f);
@@ -92,9 +82,7 @@ public class DestructiveDashAbility extends TimedAbility<NoctisEntity> {
             AbilityParticleEffects.spawnCriticalHitEffect(level, target.position().add(0, 1, 0));
         }
 
-        else if (ticks > HIT_FRAME) {
-            handleBlockImpactTracking(entity, target, level);
-        }
+        else if (ticks > HIT_FRAME) handleBlockImpactTracking(entity, target, level);
     }
 
     @Override
@@ -104,29 +92,15 @@ public class DestructiveDashAbility extends TimedAbility<NoctisEntity> {
     }
 
     @Override
-    public boolean isFinished(NoctisEntity entity) {
-        return ticks > ABILITY_DURATION;
-    }
-
+    public boolean isFinished(NoctisEntity entity) { return ticks > ABILITY_DURATION;}
 
     private void handleBlockImpactTracking(NoctisEntity entity, LivingEntity target, Level level) {
-        if (impactTriggered) {
-            return;
-        }
+        if (impactTriggered) return;
+        if (ticks < HIT_FRAME + 2) return;
 
-        if (ticks < HIT_FRAME + 2) {
-            return;
-        }
+        boolean hasNearbyBlock = ImpactDetector.hasNearbyCollision(level, target.position(), IMPACT_DETECTION_RADIUS);
 
-        boolean hasNearbyBlock = ImpactDetector.hasNearbyCollision(
-                level,
-                target.position(),
-                IMPACT_DETECTION_RADIUS
-        );
-
-        if (hasNearbyBlock) {
-            triggerBlockImpactEffect(entity, target, level);
-        }
+        if (hasNearbyBlock) triggerBlockImpactEffect(entity, target, level);
     }
 
     private void triggerBlockImpactEffect(NoctisEntity entity, LivingEntity target, Level level) {
@@ -136,14 +110,9 @@ public class DestructiveDashAbility extends TimedAbility<NoctisEntity> {
         AbilityHelper.explode( entity.level(), entity, target.position(), 1.2f);
     }
 
-    public AnimationKey getAnimationKey() {
-        return AnimationKey.RIGHT_ATTACK;
-    }
+    public AnimationKey getAnimationKey() { return AnimationKey.RIGHT_ATTACK; }
 
     @Override
-    public boolean overridesAttackAnimation() {
-        return true;
-    }
-
+    public boolean overridesAttackAnimation() { return true; }
 
 }
